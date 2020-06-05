@@ -11,7 +11,7 @@ pub trait TsCommands: ConnectionLike + Sized {
 
     fn ts_alter<K: ToRedisArgs, RV: FromRedisValue>(
         &mut self, key: K, options:TsOptions) -> RedisResult<RV> {
-        cmd("TS.ALTER").arg(key).arg(options.clear_uncompressed()).query(self)
+        cmd("TS.ALTER").arg(key).arg(options.uncompressed(false)).query(self)
     }
 
     fn ts_add<K: ToRedisArgs, TS: ToRedisArgs, V: ToRedisArgs, RV: FromRedisValue>(

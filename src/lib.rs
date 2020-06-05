@@ -2,12 +2,11 @@ pub use crate::commands::TsCommands;
 
 pub use crate::types::{
     TsOptions,
-    TsValue,
-    TsOptionValue,
     TsFilterOptions,
     TsInfo,
     TsMgetResult,
-    TsMrangeResult
+    TsMrangeResult,
+    TsAggregationType
 };
 
 mod commands;

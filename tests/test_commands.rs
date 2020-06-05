@@ -3,6 +3,7 @@ extern crate redis_ts;
 
 use redis::{Connection, Commands, Value};
 use redis_ts::{TsCommands, TsOptions, TsInfo};
+
 use serial_test::serial;
 use std::time::{SystemTime, UNIX_EPOCH};
 
