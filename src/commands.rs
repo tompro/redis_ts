@@ -116,8 +116,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         aggregation_type:Option<TsAggregationType>) -> RedisResult<Vec<(TS,V)>> {
         let mut c = cmd("TS.RANGE");
         c.arg(key).arg(from_timestamp).arg(to_timestamp);
-        if count.is_some() {
-            c.arg("COUNT").arg(count.unwrap());
+        if let Some(ct) = count {
+            c.arg("COUNT").arg(ct);
         }
         c.arg(aggregation_type).query(self)
     }
@@ -128,8 +128,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         aggregation_type:Option<TsAggregationType>, filter_options:TsFilterOptions) -> RedisResult<TsMrangeResult<TS,V>> {
         let mut c = cmd("TS.MRANGE");
         c.arg(key).arg(from_timestamp).arg(to_timestamp);
-        if count.is_some() {
-            c.arg("COUNT").arg(count.unwrap());
+        if let Some(ct) = count {
+            c.arg("COUNT").arg(ct);
         }
         c.arg(aggregation_type).arg(filter_options);
         c.query(self)

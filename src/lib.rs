@@ -56,11 +56,11 @@
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let my_opts = TsOptions::default()
-//! 	.retention_time(60000)
-//! 	.uncompressed(false)
-//! 	.label("component", "engine")
-//! 	.label("sensor", "temperature");
-//! 	
+//!   .retention_time(60000)
+//!   .uncompressed(false)
+//!   .label("component", "engine")
+//!   .label("sensor", "temperature");
+//! 
 //! let _:() = con.ts_create("my_engine", my_opts)?;
 //! # Ok(()) }
 //! ```
@@ -76,10 +76,10 @@
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let my_opts = TsOptions::default()
-//! 	.retention_time(600000)
-//! 	.label("component", "spark_plug")
-//! 	.label("sensor", "temperature");
-//! 	
+//!   .retention_time(600000)
+//!   .label("component", "spark_plug")
+//!   .label("sensor", "temperature");
+//! 
 //! let _:() = con.ts_alter("my_engine", my_opts)?;
 //! # Ok(()) }
 //! ```
@@ -102,10 +102,10 @@
 //! 
 //! /// Add with auto create.
 //! let my_opts = TsOptions::default()
-//! 	.retention_time(600000)
-//! 	.label("component", "spark_plug")
-//! 	.label("sensor", "temperature");
-//! 	
+//!   .retention_time(600000)
+//!   .label("component", "spark_plug")
+//!   .label("sensor", "temperature");
+//! 
 //! let create_ts:u64 = con.ts_add_create("my_engine", "*", 35.7, my_opts)?;
 //! # Ok(()) }
 //! ```
@@ -120,8 +120,8 @@
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let r:Vec<u64> = con.ts_madd(&[
-//! 	("my_engine", 1234, 36.0), 
-//! 	("other_engine", 4321, 33.9)
+//!   ("my_engine", 1234, 36.0), 
+//!   ("other_engine", 4321, 33.9)
 //! ])?;
 //! # Ok(()) }
 //! ```
@@ -143,10 +143,10 @@
 //! 
 //! /// With auto create.
 //! let my_opts = TsOptions::default()
-//! 	.retention_time(600000)
-//! 	.label("component", "spark_plug")
-//! 	.label("sensor", "temperature");
-//! 	
+//!   .retention_time(600000)
+//!   .label("component", "spark_plug")
+//!   .label("sensor", "temperature");
+//! 
 //! let create_ts:u64 = con.ts_incrby_create("my_engine", "*", 16.97, my_opts)?;
 //! # Ok(()) }
 //! ```
@@ -168,10 +168,10 @@
 //! 
 //! /// With auto create.
 //! let my_opts = TsOptions::default()
-//! 	.retention_time(600000)
-//! 	.label("component", "spark_plug")
-//! 	.label("sensor", "temperature");
-//! 	
+//!   .retention_time(600000)
+//!   .label("component", "spark_plug")
+//!   .label("sensor", "temperature");
+//! 
 //! let create_ts:u64 = con.ts_decrby_create("my_engine", "*", 16.97, my_opts)?;
 //! # Ok(()) }
 //! ```

@@ -38,7 +38,7 @@ impl ToRedisArgs for TsAggregationType {
             TsAggregationType::VarS(v) => ("var.s", v),
         };
 
-        out.write_arg("AGGREGATION".as_bytes());
+        out.write_arg(b"AGGREGATION");
         out.write_arg(t.as_bytes());
         val.write_redis_args(out);
 
@@ -88,7 +88,7 @@ impl TsOptions {
     /// where previously present will be removed. If the labels are empty 
     /// no labels will be used for the time series.
     pub fn labels(mut self, labels:Vec<(&str, &str)>) -> Self {
-        if labels.len() > 0 {
+        if !labels.is_empty() {
             self.labels = Some(ToRedisArgs::to_redis_args(&labels));
         } else {
             self.labels = None;
@@ -100,9 +100,8 @@ impl TsOptions {
     pub fn label(mut self, name:&str, value:&str) -> Self {
         let mut l = ToRedisArgs::to_redis_args(&vec![(name, value)]);
         let mut res:Vec<Vec<u8>> = vec![];
-        let cur = self.labels;
-        if cur.is_some() {
-            res.append(&mut cur.unwrap());
+        if let Some(mut cur) = self.labels {
+            res.append(&mut cur);
         }
         res.append(&mut l);
         self.labels = Some(res);
@@ -116,16 +115,16 @@ impl ToRedisArgs for TsOptions {
         W: ?Sized + RedisWrite {
 
         if let Some(ref rt) = self.retention_time {
-            out.write_arg("RETENTION".as_bytes());
+            out.write_arg(b"RETENTION");
             out.write_arg(format!("{}", rt).as_bytes());
         }
 
         if self.uncompressed {
-            out.write_arg("UNCOMPRESSED".as_bytes());
+            out.write_arg(b"UNCOMPRESSED");
         }
 
         if let Some(ref l) = self.labels {
-            out.write_arg("LABELS".as_bytes());
+            out.write_arg(b"LABELS");
             for arg in l {
                 out.write_arg(&arg);
             }
@@ -243,9 +242,9 @@ impl ToRedisArgs for TsFilterOptions {
         W: ?Sized + RedisWrite {
 
         if self.with_labels {
-            out.write_arg("WITHLABELS".as_bytes());
+            out.write_arg(b"WITHLABELS");
         }
-        out.write_arg("FILTER".as_bytes());
+        out.write_arg(b"FILTER");
 
         for f in self.filters.iter() {
             f.write_redis_args(out)
