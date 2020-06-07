@@ -136,7 +136,7 @@ impl ToRedisArgs for TsOptions {
 
 /// Let's you build redis time series filter query options via a builder pattern. Filters 
 /// can be used in different commands like TS.MGET, TS.MRANGE and TS.QUERYINDEX.
-#[derive(Debug, Default)]
+#[derive(Debug, Default,Clone)]
 pub struct TsFilterOptions {
     with_labels:bool,
     filters:Vec<TsFilter>,
@@ -168,10 +168,11 @@ impl TsFilterOptions {
     }
 
     /// Select time series where the given label contains the the given value. 
-    pub fn equals<L: ToRedisArgs, V:ToRedisArgs>(mut self, name:L, value:V) -> Self {
+    pub fn equals<L: std::fmt::Display + ToRedisArgs, V: std::fmt::Display + ToRedisArgs>(mut self, name:L, value:V) -> Self {
+        println!("{}", name);
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: value.to_redis_args(),
+            name: format!("{}", name),
+            value: format!("{}", value),
             compare: TsCompare::Eq
 
         });
@@ -179,10 +180,10 @@ impl TsFilterOptions {
     }
 
     /// Select time series where given label does not contain the given value.
-    pub fn not_equals<L: ToRedisArgs, V:ToRedisArgs>(mut self, name:L, value:V) -> Self {
+    pub fn not_equals<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, value:V) -> Self {
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: value.to_redis_args(),
+            name: format!("{:?}", name),
+            value: format!("{:?}", value),
             compare: TsCompare::NotEq
 
         });
@@ -190,46 +191,49 @@ impl TsFilterOptions {
     }
 
     /// Select time series where given label contains any of the given values.
-    pub fn in_set<L: ToRedisArgs>(mut self, name:L, values:Vec<&str>) -> Self {
-        let set = format!("({:?})", values.join(","));
+    pub fn in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, values:Vec<V>) -> Self {
+        let set = format!("({:?})", values.iter().map(|v| {format!("{:?}", v)}).collect::<Vec<String>>().join(","));
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: set.to_redis_args(),
+            name: format!("{:?}", name),
+            value: set,
             compare: TsCompare::Eq
         });
         self
     }
 
     /// Select time series where given label does not contain any of the given values.
-    pub fn not_in_set<L: ToRedisArgs>(mut self, name:L, values:Vec<&str>) -> Self {
-        let set = format!("({:?})", values.join(","));
-
+    pub fn not_in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, values:Vec<V>) -> Self {
+        let set = format!("({:?})", values.iter().map(|v| {format!("{:?}", v)}).collect::<Vec<String>>().join(","));
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: set.to_redis_args(),
+            name: format!("{:?}", name),
+            value: set,
             compare: TsCompare::NotEq
         });
         self
     }
 
     /// Select all time series that have the given label.
-    pub fn has_label<L: ToRedisArgs>(mut self, name:L) -> Self {
+    pub fn has_label<L: std::fmt::Debug +  ToRedisArgs>(mut self, name:L) -> Self {
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: vec![vec![]],
+            name: format!("{:?}", name),
+            value: "".to_string(),
             compare: TsCompare::NotEq
         });
         self
     }
 
     /// Select all time series that do not have the given label.
-    pub fn not_has_label<L: ToRedisArgs>(mut self, name:L) -> Self {
+    pub fn not_has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name:L) -> Self {
         self.filters.push(TsFilter {
-            name: name.to_redis_args(),
-            value: vec![],
+            name: format!("{:?}", name),
+            value: "".to_string(),
             compare: TsCompare::Eq
         });
         self
+    }
+
+    pub fn get_filters(self) -> Vec<TsFilter> {
+        self.filters
     }
 
 }
@@ -244,7 +248,7 @@ impl ToRedisArgs for TsFilterOptions {
         out.write_arg("FILTER".as_bytes());
 
         for f in self.filters.iter() {
-            f.write_redis_args(out);
+            f.write_redis_args(out)
         }
     }
 }
@@ -412,10 +416,10 @@ impl ToRedisArgs for TsCompare {
     }
 }
 
-#[derive(Debug)]
-struct TsFilter {
-    name:Vec<Vec<u8>>,
-    value:Vec<Vec<u8>>,
+#[derive(Debug,Clone)]
+pub struct TsFilter {
+    name:String,
+    value:String,
     compare:TsCompare
 }
 
@@ -424,17 +428,13 @@ impl ToRedisArgs for TsFilter {
     fn write_redis_args<W>(&self, out: &mut W) where
         W: ?Sized + RedisWrite {
 
-        let mut res:Vec<u8> = vec![];
-        for v in self.name[0].iter() {
-            res.push(*v);
-        }
-        for v in self.compare.to_redis_args()[0].iter() {
-            res.push(*v);
-        }
-        for v in self.value[0].iter() {
-            res.push(*v);
-        }
-        out.write_arg(&res);
+        let comp = match self.compare {
+            TsCompare::Eq => "=",
+            TsCompare::NotEq => "!=",
+        };
+
+        let arg = format!("{}{}{}", self.name, comp, self.value);
+        out.write_arg(arg.as_bytes());
     }
 
 }

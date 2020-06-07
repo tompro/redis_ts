@@ -1,14 +1,11 @@
 [package]
 name = "redis_ts"
 version = "0.1.0"
-authors = ["tompro <office@protom.eu>"]
+authors = ["protom <office@protom.eu>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 redis = "0.16.0"
-
 
 [dev-dependencies]
 serial_test = "0.4.0"
