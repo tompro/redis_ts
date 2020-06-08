@@ -206,8 +206,9 @@ pub use crate::types::{
     TsOptions,
     TsFilterOptions,
     TsInfo,
+    TsRange,
     TsMgetResult,
-    TsMrangeResult,
+    TsMrange,
     TsAggregationType
 };
 

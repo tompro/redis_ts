@@ -111,9 +111,9 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Executes a redis time series range query.
-    fn ts_range<K:ToRedisArgs, FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS:FromRedisValue, V:FromRedisValue>(
+    fn ts_range<K:ToRedisArgs, FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::marker::Copy + FromRedisValue, V: std::marker::Copy + FromRedisValue>(
         &mut self, key:K, from_timestamp:FTS, to_timestamp:TTS, count:Option<C>,
-        aggregation_type:Option<TsAggregationType>) -> RedisResult<Vec<(TS,V)>> {
+        aggregation_type:Option<TsAggregationType>) -> RedisResult<TsRange<TS,V>> {
         let mut c = cmd("TS.RANGE");
         c.arg(key).arg(from_timestamp).arg(to_timestamp);
         if let Some(ct) = count {
@@ -123,11 +123,11 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Executes multiple redis time series range queries.
-    fn ts_mrange<K:ToRedisArgs, FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::default::Default + FromRedisValue, V: std::default::Default + FromRedisValue>(
-        &mut self, key:K, from_timestamp:FTS, to_timestamp:TTS, count:Option<C>, 
-        aggregation_type:Option<TsAggregationType>, filter_options:TsFilterOptions) -> RedisResult<TsMrangeResult<TS,V>> {
+    fn ts_mrange<FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::default::Default + FromRedisValue + Copy, V: std::default::Default + FromRedisValue + Copy>(
+        &mut self, from_timestamp:FTS, to_timestamp:TTS, count:Option<C>, 
+        aggregation_type:Option<TsAggregationType>, filter_options:TsFilterOptions) -> RedisResult<Vec<TsMrange<TS,V>>> {
         let mut c = cmd("TS.MRANGE");
-        c.arg(key).arg(from_timestamp).arg(to_timestamp);
+        c.arg(from_timestamp).arg(to_timestamp);
         if let Some(ct) = count {
             c.arg("COUNT").arg(ct);
         }
