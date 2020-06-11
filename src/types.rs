@@ -168,7 +168,6 @@ impl TsFilterOptions {
 
     /// Select time series where the given label contains the the given value. 
     pub fn equals<L: std::fmt::Display + ToRedisArgs, V: std::fmt::Display + ToRedisArgs>(mut self, name:L, value:V) -> Self {
-        println!("{}", name);
         self.filters.push(TsFilter {
             name: format!("{}", name),
             value: format!("{}", value),
@@ -354,18 +353,66 @@ impl FromRedisValue for TsInfo {
 
 /// Represents a TS.MGET redis time series result. The concrete types for timestamp 
 /// and value eg <u64,f64> can be provided from the call site.
+#[derive(Debug)]
+pub struct TsMget<TS: FromRedisValue,V: FromRedisValue> {
+    pub values: Vec<TsMgetEntry<TS,V>>
+}
+
+impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + FromRedisValue> FromRedisValue for TsMget<TS,V> {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+      let res = match *v {
+          Value::Bulk(ref values) => {
+              TsMget {
+                values: FromRedisValue::from_redis_values(values)?
+              }
+          },
+          _ => TsMget { values: vec![] }
+      };
+      Ok(res)
+    }
+}
+
+
+/// Represents a TS.MGET redis time series entry. The concrete types for timestamp 
+/// and value eg <u64,f64> can be provided from the call site.
 #[derive(Debug,Default)]
-pub struct TsMgetResult<TS: FromRedisValue,V: FromRedisValue> {
+pub struct TsMgetEntry<TS: FromRedisValue,V: FromRedisValue> {
     pub key: String,
     pub labels: Vec<(String,String)>,
     pub value: Option<(TS,V)>
 }
 
-impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + FromRedisValue> FromRedisValue for TsMgetResult<TS,V> {
+impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + FromRedisValue> FromRedisValue for TsMgetEntry<TS,V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
       match *v {
-          Value::Bulk(_) => {
-              Ok(TsMgetResult::default())
+          Value::Bulk(ref values) => {
+            let mut result = TsMgetEntry::<TS,V>::default();
+            result.key = from_redis_value(&values[0])?;
+            result.labels = match values[1] {
+                Value::Bulk(ref vs) => {
+                    vs.iter().flat_map(|value| {
+                        match value {
+                            Value::Bulk(ref v) => Some((
+                                    from_redis_value(&v[0]).unwrap(),
+                                    from_redis_value(&v[1]).unwrap(),
+                                )),
+                            _ => None,
+                        }
+                    }).collect()
+                },
+                _ => vec![]
+            };
+            result.value = match values[2] {
+                Value::Bulk(ref vs) if !vs.is_empty() => {
+                    Some((
+                        from_redis_value(&vs[0]).unwrap(),
+                        from_redis_value(&vs[1]).unwrap(),
+                    ))
+                },
+                _ => None
+            };
+
+            Ok(result)
           },
           _ => Err(RedisError::from(
               std::io::Error::new(std::io::ErrorKind::Other, "no_mget_data"),
@@ -374,28 +421,8 @@ impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + From
     }
 }
 
-#[derive(Debug)]
-struct TsValueReply<TS: FromRedisValue, V: FromRedisValue> {
-    pub ts:TS,
-    pub value:V
-}
-
-impl <TS: FromRedisValue, V: FromRedisValue> FromRedisValue for TsValueReply<TS,V> {
-    fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-              Ok(TsValueReply {
-                ts: from_redis_value(&values[0]).unwrap(),
-                value: from_redis_value(&values[1]).unwrap(),
-              })
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_value_data"),
-          ))
-      }
-    }
-}
-
+/// Represents a TS.RANGE redis time series result. The concrete types for timestamp 
+/// and value eg <u64,f64> can be provided from the call site.
 #[derive(Debug)]
 pub struct TsRange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
     pub values:Vec<(TS,V)>
@@ -415,20 +442,41 @@ impl <TS: FromRedisValue + Copy, V: FromRedisValue + Copy> FromRedisValue for Ts
     }
 }
 
-/// Represents a TS.MRANGE redis time series result. The concrete types for timestamp 
+/// Represents a TS.MRANGE redis time series result with multiple entries. The concrete types for timestamp 
+/// and value eg <u64,f64> can be provided from the call site.
+#[derive(Debug)]
+pub struct TsMrange<TS: FromRedisValue + Copy,V: FromRedisValue + Copy> {
+    pub values: Vec<TsMrangeEntry<TS,V>>
+}
+
+impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default + FromRedisValue + Copy> FromRedisValue
+    for TsMrange<TS,V> {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let res = match *v {
+            Value::Bulk(ref values) => {
+                TsMrange { values: FromRedisValue::from_redis_values(values)?}
+            },
+            _ => TsMrange { values: vec![] }
+        };
+        Ok(res)
+    }
+}
+
+/// Represents a TS.MRANGE redis time series value. The concrete types for timestamp 
 /// and value eg <u64,f64> can be provided from the call site.
 #[derive(Debug,Default)]
-pub struct TsMrange<TS: FromRedisValue + Copy,V: FromRedisValue + Copy> {
+pub struct TsMrangeEntry<TS: FromRedisValue + Copy,V: FromRedisValue + Copy> {
     pub key: String,
     pub labels: Vec<(String,String)>,
     pub values: Vec<(TS,V)>
 }
 
-impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default + FromRedisValue + Copy> FromRedisValue for TsMrange<TS,V> {
+impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default + FromRedisValue + Copy> FromRedisValue
+    for TsMrangeEntry<TS,V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
       match *v {
           Value::Bulk(ref values) => {
-            let mut result = TsMrange::<TS,V>::default();
+            let mut result = TsMrangeEntry::<TS,V>::default();
             result.key = from_redis_value(&values[0]).unwrap();
             result.labels = match values[1] {
                 Value::Bulk(ref vs) => {
@@ -461,6 +509,27 @@ impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default
     }
 }
 
+#[derive(Debug)]
+struct TsValueReply<TS: FromRedisValue, V: FromRedisValue> {
+    pub ts:TS,
+    pub value:V
+}
+
+impl <TS: FromRedisValue, V: FromRedisValue> FromRedisValue for TsValueReply<TS,V> {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+      match *v {
+          Value::Bulk(ref values) => {
+              Ok(TsValueReply {
+                ts: from_redis_value(&values[0]).unwrap(),
+                value: from_redis_value(&values[1]).unwrap(),
+              })
+          },
+          _ => Err(RedisError::from(
+              std::io::Error::new(std::io::ErrorKind::Other, "no_value_data"),
+          ))
+      }
+    }
+}
 
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]
 enum TsCompare {

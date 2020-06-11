@@ -111,7 +111,8 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Executes a redis time series range query.
-    fn ts_range<K:ToRedisArgs, FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::marker::Copy + FromRedisValue, V: std::marker::Copy + FromRedisValue>(
+    fn ts_range<K:ToRedisArgs, FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::marker::Copy + FromRedisValue, 
+        V: std::marker::Copy + FromRedisValue>(
         &mut self, key:K, from_timestamp:FTS, to_timestamp:TTS, count:Option<C>,
         aggregation_type:Option<TsAggregationType>) -> RedisResult<TsRange<TS,V>> {
         let mut c = cmd("TS.RANGE");
@@ -123,9 +124,10 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Executes multiple redis time series range queries.
-    fn ts_mrange<FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::default::Default + FromRedisValue + Copy, V: std::default::Default + FromRedisValue + Copy>(
+    fn ts_mrange<FTS:ToRedisArgs, TTS:ToRedisArgs, C:ToRedisArgs, TS: std::default::Default + FromRedisValue + Copy, 
+        V: std::default::Default + FromRedisValue + Copy>(
         &mut self, from_timestamp:FTS, to_timestamp:TTS, count:Option<C>, 
-        aggregation_type:Option<TsAggregationType>, filter_options:TsFilterOptions) -> RedisResult<Vec<TsMrange<TS,V>>> {
+        aggregation_type:Option<TsAggregationType>, filter_options:TsFilterOptions) -> RedisResult<TsMrange<TS,V>> {
         let mut c = cmd("TS.MRANGE");
         c.arg(from_timestamp).arg(to_timestamp);
         if let Some(ct) = count {
@@ -141,8 +143,8 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Returns the latest (current) value from multiple redis time series.
-    fn ts_mget<K:ToRedisArgs, TS: std::default::Default +  FromRedisValue, V: std::default::Default + FromRedisValue>(
-        &mut self, filter_options:TsFilterOptions) -> RedisResult<TsMgetResult<TS,V>> {
+    fn ts_mget<TS: std::default::Default +  FromRedisValue, V: std::default::Default + FromRedisValue>(
+        &mut self, filter_options:TsFilterOptions) -> RedisResult<TsMget<TS,V>> {
         cmd("TS.MGET").arg(filter_options).query(self)
     }
 

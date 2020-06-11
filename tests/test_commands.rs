@@ -2,7 +2,7 @@ extern crate redis;
 extern crate redis_ts;
 
 use redis::{Connection, Commands, Value};
-use redis_ts::{TsCommands, TsOptions, TsInfo, TsAggregationType, TsFilterOptions, TsRange, TsMrange};
+use redis_ts::{TsCommands, TsOptions, TsInfo, TsAggregationType, TsFilterOptions, TsRange, TsMrange, TsMget};
 
 
 use std::time::{SystemTime, UNIX_EPOCH, Duration};
@@ -226,6 +226,33 @@ fn test_ts_get() {
 }
 
 #[test]
+fn test_ts_mget() {
+    let _:() = get_con().del("test_ts_mget").unwrap();
+    let _:() = get_con().del("test_ts_mget2").unwrap();
+    let _:() = get_con().del("test_ts_mget3").unwrap();
+    let opts:TsOptions = TsOptions::default().label("l", "mget");
+    let _:Value = get_con().ts_create("test_ts_mget", opts.clone()).unwrap();
+    let _:Value = get_con().ts_create("test_ts_mget2", opts.clone()).unwrap();
+    let _:Value = get_con().ts_create("test_ts_mget3", opts.clone()).unwrap();
+    let _:() = get_con().ts_madd(&[
+        ("test_ts_mget", 12, 1.0), 
+        ("test_ts_mget", 123, 2.0),
+        ("test_ts_mget", 1234, 3.0),
+        ("test_ts_mget2", 21, 1.0), 
+        ("test_ts_mget2", 321, 2.0),
+        ("test_ts_mget2", 4321, 3.0)
+    ]).unwrap();
+    let res:TsMget<u64,f64> = get_con().ts_mget(
+        TsFilterOptions::default().equals("l", "mget").with_labels(true)
+    ).unwrap();
+    
+    assert_eq!(res.values.len(), 3);
+    assert_eq!(res.values[0].value, Some((1234, 3.0)));
+    assert_eq!(res.values[1].value, Some((4321, 3.0)));
+    assert_eq!(res.values[2].value, None);
+}
+
+#[test]
 fn test_ts_get_ts_info() {
     let _:() = get_con().del("test_ts_get_ts_info").unwrap();
     let _:Value = get_con().ts_create("test_ts_get_ts_info", default_settings()).unwrap();
@@ -241,7 +268,9 @@ fn test_ts_get_ts_info() {
 #[test]
 fn test_ts_range() {
     let _:() = get_con().del("test_ts_range").unwrap();
+    let _:() = get_con().del("test_ts_range2").unwrap();
     let _:() = get_con().ts_create("test_ts_range", default_settings()).unwrap();
+    let _:() = get_con().ts_create("test_ts_range2", default_settings()).unwrap();
     let _:() = get_con().ts_madd(&[
         ("test_ts_range", 12, 1.0), 
         ("test_ts_range", 123, 2.0),
@@ -249,7 +278,19 @@ fn test_ts_range() {
     ]).unwrap();
 
     let res:TsRange<u64,f64> = get_con().ts_range("test_ts_range", "-", "+", None::<usize>, None).unwrap();
-    println!("{:?}", res);
+    assert_eq!(res.values, vec![(12, 1.0), (123, 2.0), (1234, 3.0)]);
+
+    let one_res:TsRange<u64,f64> = get_con().ts_range("test_ts_range", "-", "+", Some(1), None).unwrap();
+    assert_eq!(one_res.values, vec![(12, 1.0)]);
+
+    let range_res:TsRange<u64,f64> = get_con().ts_range("test_ts_range", 12, 123, None::<usize>, None).unwrap();
+    assert_eq!(range_res.values, vec![(12, 1.0), (123, 2.0)]);
+
+    let sum:TsRange<u64,f64> = get_con().ts_range("test_ts_range", 12, 123, None::<usize>, Some(TsAggregationType::Sum(10000))).unwrap();
+    assert_eq!(sum.values, vec![(0, 3.0)]);
+
+    let res:TsRange<u64,f64> = get_con().ts_range("test_ts_range2", "-", "+", None::<usize>, None).unwrap();
+    assert_eq!(res.values, vec![]);
 }
 
 #[test]
@@ -268,10 +309,19 @@ fn test_ts_mrange() {
         ("test_ts_mrange2", 4321, 3.0)
     ]).unwrap();
 
-    let res:Vec<TsMrange<u64,f64>> = get_con().ts_mrange(
+    let res:TsMrange<u64,f64> = get_con().ts_mrange(
         "-", "+", None::<usize>, None, TsFilterOptions::default().equals("l", "mrange").with_labels(true)
     ).unwrap();
-    println!("{:?}", res);
+    assert_eq!(res.values.len(), 2);
+    assert_eq!(res.values[1].values, vec![(21, 1.0), (321, 2.0), (4321, 3.0)]);
+    assert_eq!(res.values[0].key, "test_ts_mrange");
+    assert_eq!(res.values[1].key, "test_ts_mrange2");
+    assert_eq!(res.values[0].labels, vec![("l".to_string(), "mrange".to_string())]);
+
+    let res2:TsMrange<u64,f64> = get_con().ts_mrange(
+        "-", "+", None::<usize>, None, TsFilterOptions::default().equals("none", "existing").with_labels(true)
+    ).unwrap();
+    assert!(res2.values.is_empty());
 }
 
 #[test]
@@ -279,6 +329,6 @@ fn test_ts_queryindex() {
     let _:() = get_con().del("test_ts_queryindex").unwrap();
     let _:Value = get_con().ts_create("test_ts_queryindex", default_settings()).unwrap();
     let _:() = get_con().ts_add("test_ts_queryindex", "1234", 2.0).unwrap();
-    let index = get_con().ts_queryindex(TsFilterOptions::default().equals("a", "b")).unwrap();
+    let index:Vec<String> = get_con().ts_queryindex(TsFilterOptions::default().equals("a", "b")).unwrap();
     assert!(index.contains(&"test_ts_queryindex".to_string()));
 }

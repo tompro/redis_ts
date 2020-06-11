@@ -4,11 +4,13 @@
 //! a [redis module](https://oss.redislabs.com/redistimeseries). Time 
 //! series commands are available as synchronous and asynchronous versions.
 //! 
-//! The crate is called `redis_ts` and you can depend on it via cargo:
+//! The crate is called `redis_ts` and you can depend on it via cargo. You will 
+//! also need redis in your dependencies.
 //!
 //! ```ini
-//! [dependencies.redis_ts]
-//! version = "*"
+//! [dependencies]
+//! redis = "0.16.0"
+//! redis_ts = "*"
 //! ```
 //!
 //! Or via git:
@@ -179,38 +181,138 @@
 //! ## TS.CREATERULE
 //! Create time series compaction rules.
 //! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands, TsAggregationType};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let _:() = con.ts_createrule("my_engine", "my_engine_avg", TsAggregationType::Avg(5000))?;
+//! # Ok(()) }
+//! ```
+//! 
 //! ## TS.DELETERULE
 //! Delete time series compaction rules.
+//! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands, TsOptions};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let _:() = con.ts_deleterule("my_engine", "my_engine_avg")?;
+//! # Ok(()) }
+//! ```
 //! 
 //! ## TS.RANGE
 //! Query for a range of time series data.
 //! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands, TsRange, TsAggregationType};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let first_three_avg:TsRange<u64,f64> = con.ts_range(
+//!     "my_engine", "-", "+", Some(3), Some(TsAggregationType::Avg(5000))
+//! )?;
+//! 
+//! let range_raw:TsRange<u64,f64> = con.ts_range(
+//!     "my_engine", 1234, 5678, None::<usize>, None
+//! )?;
+//! # Ok(()) }
+//! ```
+//! 
 //! ## TS.MRANGE
 //! Batch query multiple ranges of time series data.
+//! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands, TsMrange, TsAggregationType, TsFilterOptions};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let first_three_avg:TsMrange<u64,f64> = con.ts_mrange(
+//!     "-", "+", Some(3), Some(TsAggregationType::Avg(5000)), 
+//!     TsFilterOptions::default().equals("sensor", "temperature")
+//! )?;
+//! 
+//! let range_raw:TsMrange<u64,f64> = con.ts_mrange(
+//!     1234, 5678, None::<usize>, None, 
+//!     TsFilterOptions::default().equals("sensor", "temperature")
+//! )?;
+//! # Ok(()) }
+//! ```
 //! 
 //! ## TS.GET
 //! Get the most recent value of a time series.
 //! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let latest:Option<(u64,f64)> = con.ts_get("my_engine")?;
+//! # Ok(()) }
+//! ```
+//! 
 //! ## TS.MGET
 //! Get the most recent value of multiple time series.
+//! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands, TsMget, TsFilterOptions};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let temperature:TsMget<u64,f64> = con.ts_mget(
+//!     TsFilterOptions::default().equals("sensor", "temperature").with_labels(true)
+//! )?;
+//! # Ok(()) }
+//! ```
 //! 
 //! ## TS.INFO
 //! Get information about a time series key.
 //! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands,TsInfo};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let info:TsInfo = con.ts_info("my_engine")?;
+//! # Ok(()) }
+//! ```
+//! 
 //! ## TS.QUERYINDEX
 //! Get the keys of time series filtered by given filter.
 //! 
+//! ```rust,no_run
+//! # fn run() -> redis::RedisResult<()> {
+//! # use redis::Commands;
+//! # use redis_ts::{TsCommands,TsFilterOptions};
+//! # let client = redis::Client::open("redis://127.0.0.1/")?;
+//! # let mut con = client.get_connection()?;
+//! let index:Vec<String> = con.ts_queryindex(
+//!     TsFilterOptions::default().equals("sensor", "temperature")
+//! )?;
+//! # Ok(()) }
+//! ```
+//! 
 pub use crate::commands::TsCommands;
+pub use crate::async_commands::AsyncTsCommands;
 
 pub use crate::types::{
     TsOptions,
     TsFilterOptions,
     TsInfo,
     TsRange,
-    TsMgetResult,
+    TsMget,
     TsMrange,
     TsAggregationType
 };
 
 mod commands;
+mod async_commands;
 mod types;
