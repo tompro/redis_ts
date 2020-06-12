@@ -5,7 +5,6 @@ use crate::types::*;
 /// Provides a high level synchronous API to work with redis time series data types. Uses some abstractions 
 /// for easier handling of time series related redis command arguments. All commands are directly 
 /// available on ConnectionLike types from the redis crate.
-/// TsCommand can be used in the following way:
 /// ```rust,no_run
 /// # fn run() -> redis::RedisResult<()> {
 /// use redis::Commands;
@@ -15,6 +14,8 @@ use crate::types::*;
 /// let mut con = client.get_connection()?;
 /// 
 /// let _:() = con.ts_create("my_ts", TsOptions::default())?;
+/// let ts:u64 = con.ts_add_now("my_ts", 2.0)?;
+/// let v:Option<(u64,f64)> = con.ts_get("my_ts")?;
 /// # Ok(()) }
 /// ```
 /// 

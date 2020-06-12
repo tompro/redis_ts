@@ -1,9 +1,25 @@
 
-use redis::FromRedisValue;
-use redis::{cmd, RedisFuture, ToRedisArgs};
+use redis::{cmd, RedisFuture, ToRedisArgs, FromRedisValue};
 use redis::aio::ConnectionLike;
 use crate::types::*;
 
+/// Provides a high level synchronous API to work with redis time series data types. Uses some abstractions 
+/// for easier handling of time series related redis command arguments. All commands are directly 
+/// available on ConnectionLike types from the redis crate.
+/// ```rust,no_run
+/// # async fn run() -> redis::RedisResult<()> {
+/// use redis::AsyncCommands;
+/// use redis_ts::{AsyncTsCommands, TsOptions};
+/// 
+/// let client = redis::Client::open("redis://127.0.0.1/")?;
+/// let mut con = client.get_async_connection().await?;
+/// 
+/// let _:() = con.ts_create("my_ts", TsOptions::default()).await?;
+/// let ts:u64 = con.ts_add_now("my_ts", 2.0).await?;
+/// let v:Option<(u64,f64)> = con.ts_get("my_ts").await?;
+/// # Ok(()) }
+/// ```
+/// 
 pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
 	
   	/// Returns information about a redis time series key.

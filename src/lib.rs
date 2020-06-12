@@ -40,6 +40,25 @@
 //! # Ok(()) }
 //! ```
 //! 
+//! 
+//! # Asynchronous usage 
+//! 
+//! To enable redis time series async commands you simply load the 
+//! redis_ts::TsAsyncCommands into the scope. All redis time series 
+//! commands will then be available on your async redis connection.
+//! 
+//! ```rust,no_run
+//! # async fn run() -> redis::RedisResult<()> {
+//! use redis::AsyncCommands;
+//! use redis_ts::{AsyncTsCommands, TsOptions};
+//! 
+//! let client = redis::Client::open("redis://127.0.0.1/")?;
+//! let mut con = client.get_async_connection().await?;
+//! 
+//! let _:() = con.ts_create("my_ts", TsOptions::default()).await?;
+//! # Ok(()) }
+//! ```
+//! 
 //! # Supported commands
 //! 
 //! The following examples work with the synchronous and asynchronous 
