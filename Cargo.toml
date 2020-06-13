@@ -2,6 +2,13 @@
 name = "redis_ts"
 version = "0.1.0"
 authors = ["protom <office@protom.eu>"]
+keywords = ["redis", "database"]
+description = "API for Redis time series types."
+homepage = "https://github.com/tompro/redis_ts"
+repository = "https://github.com/tompro/redis_ts"
+documentation = "https://docs.rs/redis_ts"
+license = "BSD-3-Clause"
+readme = "README.md"
 edition = "2018"
 
 [dependencies]
