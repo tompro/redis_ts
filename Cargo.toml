@@ -10,6 +10,7 @@ documentation = "https://docs.rs/redis_ts"
 license = "BSD-3-Clause"
 readme = "README.md"
 edition = "2018"
+exclude = ["docker"]
 
 [dependencies]
 redis = "0.16.0"

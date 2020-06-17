@@ -1,5 +1,8 @@
 # redis_ts
 
+[![crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange)](https://crates.io/crates/redis_ts)
+![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
+
 redis_ts proivdes a small trait with extension functions for the 
 [redis](https://docs.rs/redis/0.16.0/redis) crate to allow 
 working with redis time series data that can be installed as 
