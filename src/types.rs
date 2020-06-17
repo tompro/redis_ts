@@ -1,5 +1,7 @@
+use redis::{
+    from_redis_value, FromRedisValue, RedisError, RedisResult, RedisWrite, ToRedisArgs, Value,
+};
 use std::collections::HashMap;
-use redis::{ToRedisArgs, RedisWrite, Value, FromRedisValue, RedisResult, from_redis_value, RedisError};
 use std::str;
 
 /// Allows you to specify a redis time series aggreation with a time
@@ -21,8 +23,10 @@ pub enum TsAggregationType {
 }
 
 impl ToRedisArgs for TsAggregationType {
-    fn write_redis_args<W>(&self, out: &mut W) where
-        W: ?Sized + RedisWrite {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
         let (t, val) = match *self {
             TsAggregationType::Avg(v) => ("avg", v),
             TsAggregationType::Sum(v) => ("sum", v),
@@ -41,53 +45,51 @@ impl ToRedisArgs for TsAggregationType {
         out.write_arg(b"AGGREGATION");
         out.write_arg(t.as_bytes());
         val.write_redis_args(out);
-
     }
 }
 
-/// Options for a redis time series key. Can be used in multiple redis 
-/// time series calls (CREATE, ALTER, ADD, ...). The uncompressed option 
+/// Options for a redis time series key. Can be used in multiple redis
+/// time series calls (CREATE, ALTER, ADD, ...). The uncompressed option
 /// will only be respected in a TS.CREATE.
 #[derive(Default, Debug, Clone)]
 pub struct TsOptions {
-    retention_time:Option<u64>,
-    uncompressed:bool,
-    labels:Option<Vec<Vec<u8>>>
+    retention_time: Option<u64>,
+    uncompressed: bool,
+    labels: Option<Vec<Vec<u8>>>,
 }
 
-/// TsOptions allows you to build up your redis time series configuration. It 
-/// supports default and a builder pattern so you can use it the following way: 
-/// 
+/// TsOptions allows you to build up your redis time series configuration. It
+/// supports default and a builder pattern so you can use it the following way:
+///
 /// ```rust
 /// use redis_ts::TsOptions;
-/// 
+///
 /// let opts:TsOptions = TsOptions::default()
 ///     .retention_time(60000)
 ///     .uncompressed(false)
 ///     .label("label_1", "value_1")
 ///     .label("label_2", "value_2");
 /// ```
-/// 
+///
 impl TsOptions {
-    
     /// Specifies the retention time in millis for this time series options.
-    pub fn retention_time(mut self, time:u64) -> Self {
+    pub fn retention_time(mut self, time: u64) -> Self {
         self.retention_time = Some(time);
         self
     }
 
-    /// Switches this time series into uncompressed mode. Note that 
-    /// redis ts only respects this flag in TS.CREATE. All other options 
+    /// Switches this time series into uncompressed mode. Note that
+    /// redis ts only respects this flag in TS.CREATE. All other options
     /// usages will ignore this flag.
-    pub fn uncompressed(mut self, value:bool) -> Self {
+    pub fn uncompressed(mut self, value: bool) -> Self {
         self.uncompressed = value;
         self
     }
 
-    /// Resets all labels to the items in given labels. All labels that 
-    /// where previously present will be removed. If the labels are empty 
+    /// Resets all labels to the items in given labels. All labels that
+    /// where previously present will be removed. If the labels are empty
     /// no labels will be used for the time series.
-    pub fn labels(mut self, labels:Vec<(&str, &str)>) -> Self {
+    pub fn labels(mut self, labels: Vec<(&str, &str)>) -> Self {
         if !labels.is_empty() {
             self.labels = Some(ToRedisArgs::to_redis_args(&labels));
         } else {
@@ -97,9 +99,9 @@ impl TsOptions {
     }
 
     /// Adds a single label to this time series options.
-    pub fn label(mut self, name:&str, value:&str) -> Self {
+    pub fn label(mut self, name: &str, value: &str) -> Self {
         let mut l = ToRedisArgs::to_redis_args(&vec![(name, value)]);
-        let mut res:Vec<Vec<u8>> = vec![];
+        let mut res: Vec<Vec<u8>> = vec![];
         if let Some(mut cur) = self.labels {
             res.append(&mut cur);
         }
@@ -107,13 +109,13 @@ impl TsOptions {
         self.labels = Some(res);
         self
     }
-
 }
 
 impl ToRedisArgs for TsOptions {
-    fn write_redis_args<W>(&self, out: &mut W) where
-        W: ?Sized + RedisWrite {
-
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
         if let Some(ref rt) = self.retention_time {
             out.write_arg(b"RETENTION");
             out.write_arg(format!("{}", rt).as_bytes());
@@ -129,24 +131,23 @@ impl ToRedisArgs for TsOptions {
                 out.write_arg(&arg);
             }
         }
-
     }
 }
 
-/// Let's you build redis time series filter query options via a builder pattern. Filters 
+/// Let's you build redis time series filter query options via a builder pattern. Filters
 /// can be used in different commands like TS.MGET, TS.MRANGE and TS.QUERYINDEX.
-#[derive(Debug, Default,Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TsFilterOptions {
-    with_labels:bool,
-    filters:Vec<TsFilter>,
+    with_labels: bool,
+    filters: Vec<TsFilter>,
 }
 
-/// TsFilterOptions allows you to build up your redis time series filter query. It 
-/// supports default and a builder pattern so you can use it the following way: 
-/// 
+/// TsFilterOptions allows you to build up your redis time series filter query. It
+/// supports default and a builder pattern so you can use it the following way:
+///
 /// ```rust
 /// use redis_ts::TsFilterOptions;
-/// 
+///
 /// let filters = TsFilterOptions::default()
 ///     .with_labels(true)
 ///     .equals("label_1", "value_1")
@@ -156,76 +157,103 @@ pub struct TsFilterOptions {
 ///     .has_label("some_other")
 ///     .not_has_label("unwanted");
 /// ```
-/// 
+///
 impl TsFilterOptions {
-    
-    /// Will add the WITHLABELS flag to the filter query. The query response will have 
+    /// Will add the WITHLABELS flag to the filter query. The query response will have
     /// label information attached.
-    pub fn with_labels(mut self, value:bool) -> Self {
+    pub fn with_labels(mut self, value: bool) -> Self {
         self.with_labels = value;
         self
     }
 
-    /// Select time series where the given label contains the the given value. 
-    pub fn equals<L: std::fmt::Display + ToRedisArgs, V: std::fmt::Display + ToRedisArgs>(mut self, name:L, value:V) -> Self {
+    /// Select time series where the given label contains the the given value.
+    pub fn equals<L: std::fmt::Display + ToRedisArgs, V: std::fmt::Display + ToRedisArgs>(
+        mut self,
+        name: L,
+        value: V,
+    ) -> Self {
         self.filters.push(TsFilter {
             name: format!("{}", name),
             value: format!("{}", value),
-            compare: TsCompare::Eq
-
+            compare: TsCompare::Eq,
         });
         self
     }
 
     /// Select time series where given label does not contain the given value.
-    pub fn not_equals<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, value:V) -> Self {
+    pub fn not_equals<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+        mut self,
+        name: L,
+        value: V,
+    ) -> Self {
         self.filters.push(TsFilter {
             name: format!("{:?}", name),
             value: format!("{:?}", value),
-            compare: TsCompare::NotEq
-
+            compare: TsCompare::NotEq,
         });
         self
     }
 
     /// Select time series where given label contains any of the given values.
-    pub fn in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, values:Vec<V>) -> Self {
-        let set = format!("({:?})", values.iter().map(|v| {format!("{:?}", v)}).collect::<Vec<String>>().join(","));
+    pub fn in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+        mut self,
+        name: L,
+        values: Vec<V>,
+    ) -> Self {
+        let set = format!(
+            "({:?})",
+            values
+                .iter()
+                .map(|v| { format!("{:?}", v) })
+                .collect::<Vec<String>>()
+                .join(",")
+        );
         self.filters.push(TsFilter {
             name: format!("{:?}", name),
             value: set,
-            compare: TsCompare::Eq
+            compare: TsCompare::Eq,
         });
         self
     }
 
     /// Select time series where given label does not contain any of the given values.
-    pub fn not_in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(mut self, name:L, values:Vec<V>) -> Self {
-        let set = format!("({:?})", values.iter().map(|v| {format!("{:?}", v)}).collect::<Vec<String>>().join(","));
+    pub fn not_in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+        mut self,
+        name: L,
+        values: Vec<V>,
+    ) -> Self {
+        let set = format!(
+            "({:?})",
+            values
+                .iter()
+                .map(|v| { format!("{:?}", v) })
+                .collect::<Vec<String>>()
+                .join(",")
+        );
         self.filters.push(TsFilter {
             name: format!("{:?}", name),
             value: set,
-            compare: TsCompare::NotEq
+            compare: TsCompare::NotEq,
         });
         self
     }
 
     /// Select all time series that have the given label.
-    pub fn has_label<L: std::fmt::Debug +  ToRedisArgs>(mut self, name:L) -> Self {
+    pub fn has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
             name: format!("{:?}", name),
             value: "".to_string(),
-            compare: TsCompare::NotEq
+            compare: TsCompare::NotEq,
         });
         self
     }
 
     /// Select all time series that do not have the given label.
-    pub fn not_has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name:L) -> Self {
+    pub fn not_has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
             name: format!("{:?}", name),
             value: "".to_string(),
-            compare: TsCompare::Eq
+            compare: TsCompare::Eq,
         });
         self
     }
@@ -233,13 +261,13 @@ impl TsFilterOptions {
     pub fn get_filters(self) -> Vec<TsFilter> {
         self.filters
     }
-
 }
 
 impl ToRedisArgs for TsFilterOptions {
-    fn write_redis_args<W>(&self, out: &mut W) where
-        W: ?Sized + RedisWrite {
-
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
         if self.with_labels {
             out.write_arg(b"WITHLABELS");
         }
@@ -252,7 +280,7 @@ impl ToRedisArgs for TsFilterOptions {
 }
 
 /// Provides information about a redis time series key.
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct TsInfo {
     pub total_samples: u64,
     pub memory_usage: u64,
@@ -261,273 +289,277 @@ pub struct TsInfo {
     pub retention_time: u64,
     pub chunk_count: u64,
     pub max_samples_per_chunk: u16,
-    pub labels: Vec<(String,String)>,
+    pub labels: Vec<(String, String)>,
     pub source_key: Option<String>,
-    pub rules: Vec<(String,u64,String)>,
+    pub rules: Vec<(String, u64, String)>,
 }
 
 impl FromRedisValue for TsInfo {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-            let mut result = TsInfo::default();
-            let mut map:HashMap<String,Value> = HashMap::new();
-            for pair in values.chunks(2) {
-                map.insert(
-                    from_redis_value(&pair[0])?,
-                    pair[1].clone()
-                );
-            }
+        match *v {
+            Value::Bulk(ref values) => {
+                let mut result = TsInfo::default();
+                let mut map: HashMap<String, Value> = HashMap::new();
+                for pair in values.chunks(2) {
+                    map.insert(from_redis_value(&pair[0])?, pair[1].clone());
+                }
 
-            if let Some(v) = map.get("totalSamples") {
-                result.total_samples = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("totalSamples") {
+                    result.total_samples = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("memoryUsage") {
-                result.memory_usage = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("memoryUsage") {
+                    result.memory_usage = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("firstTimestamp") {
-                result.first_timestamp = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("firstTimestamp") {
+                    result.first_timestamp = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("lastTimestamp") {
-                result.last_timestamp = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("lastTimestamp") {
+                    result.last_timestamp = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("retentionTime") {
-                result.retention_time = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("retentionTime") {
+                    result.retention_time = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("chunkCount") {
-                result.chunk_count = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("chunkCount") {
+                    result.chunk_count = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("maxSamplesPerChunk") {
-                result.max_samples_per_chunk = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("maxSamplesPerChunk") {
+                    result.max_samples_per_chunk = from_redis_value(v)?;
+                }
 
-            if let Some(v) = map.get("sourceKey") {
-                result.source_key = from_redis_value(v)?;
-            }
+                if let Some(v) = map.get("sourceKey") {
+                    result.source_key = from_redis_value(v)?;
+                }
 
-            result.rules = match map.get("rules") {
-                Some(Value::Bulk(ref values)) => {
-                    values.iter().flat_map(|value| {
-                        match value {
+                result.rules = match map.get("rules") {
+                    Some(Value::Bulk(ref values)) => values
+                        .iter()
+                        .flat_map(|value| match value {
                             Value::Bulk(ref vs) => Some((
-                                    from_redis_value(&vs[0]).unwrap(),
-                                    from_redis_value(&vs[1]).unwrap(),
-                                    from_redis_value(&vs[2]).unwrap(),
-                                )),
+                                from_redis_value(&vs[0]).unwrap(),
+                                from_redis_value(&vs[1]).unwrap(),
+                                from_redis_value(&vs[2]).unwrap(),
+                            )),
                             _ => None,
-                        }
-                    }).collect()
-                },
-                _ => vec![]
-            };
+                        })
+                        .collect(),
+                    _ => vec![],
+                };
 
-            result.labels = match map.get("labels") {
-                Some(Value::Bulk(ref values)) => {
-                    values.iter().flat_map(|value| {
-                        match value {
+                result.labels = match map.get("labels") {
+                    Some(Value::Bulk(ref values)) => values
+                        .iter()
+                        .flat_map(|value| match value {
                             Value::Bulk(ref vs) => Some((
-                                    from_redis_value(&vs[0]).unwrap(),
-                                    from_redis_value(&vs[1]).unwrap(),
-                                )),
+                                from_redis_value(&vs[0]).unwrap(),
+                                from_redis_value(&vs[1]).unwrap(),
+                            )),
                             _ => None,
-                        }
-                    }).collect()
-                },
-                _ => vec![]
-            };
+                        })
+                        .collect(),
+                    _ => vec![],
+                };
 
-            Ok(result)
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_ts_info_data"),
-          ))
-      }
+                Ok(result)
+            }
+            _ => Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "no_ts_info_data",
+            ))),
+        }
     }
 }
 
-/// Represents a TS.MGET redis time series result. The concrete types for timestamp 
+/// Represents a TS.MGET redis time series result. The concrete types for timestamp
 /// and value eg <u64,f64> can be provided from the call site.
 #[derive(Debug)]
-pub struct TsMget<TS: FromRedisValue,V: FromRedisValue> {
-    pub values: Vec<TsMgetEntry<TS,V>>
+pub struct TsMget<TS: FromRedisValue, V: FromRedisValue> {
+    pub values: Vec<TsMgetEntry<TS, V>>,
 }
 
-impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + FromRedisValue> FromRedisValue for TsMget<TS,V> {
-    fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      let res = match *v {
-          Value::Bulk(ref values) => {
-              TsMget {
-                values: FromRedisValue::from_redis_values(values)?
-              }
-          },
-          _ => TsMget { values: vec![] }
-      };
-      Ok(res)
-    }
-}
-
-
-/// Represents a TS.MGET redis time series entry. The concrete types for timestamp 
-/// and value eg <u64,f64> can be provided from the call site.
-#[derive(Debug,Default)]
-pub struct TsMgetEntry<TS: FromRedisValue,V: FromRedisValue> {
-    pub key: String,
-    pub labels: Vec<(String,String)>,
-    pub value: Option<(TS,V)>
-}
-
-impl <TS: std::default::Default + FromRedisValue,V: std::default::Default + FromRedisValue> FromRedisValue for TsMgetEntry<TS,V> {
-    fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-            let mut result = TsMgetEntry::<TS,V>::default();
-            result.key = from_redis_value(&values[0])?;
-            result.labels = match values[1] {
-                Value::Bulk(ref vs) => {
-                    vs.iter().flat_map(|value| {
-                        match value {
-                            Value::Bulk(ref v) => Some((
-                                    from_redis_value(&v[0]).unwrap(),
-                                    from_redis_value(&v[1]).unwrap(),
-                                )),
-                            _ => None,
-                        }
-                    }).collect()
-                },
-                _ => vec![]
-            };
-            result.value = match values[2] {
-                Value::Bulk(ref vs) if !vs.is_empty() => {
-                    Some((
-                        from_redis_value(&vs[0]).unwrap(),
-                        from_redis_value(&vs[1]).unwrap(),
-                    ))
-                },
-                _ => None
-            };
-
-            Ok(result)
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_mget_data"),
-          ))
-      }
-    }
-}
-
-/// Represents a TS.RANGE redis time series result. The concrete types for timestamp 
-/// and value eg <u64,f64> can be provided from the call site.
-#[derive(Debug)]
-pub struct TsRange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
-    pub values:Vec<(TS,V)>
-}
-
-impl <TS: FromRedisValue + Copy, V: FromRedisValue + Copy> FromRedisValue for TsRange<TS,V> {
-    fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-            let items:Vec<TsValueReply<TS,V>> = FromRedisValue::from_redis_values(values)?;
-            Ok(TsRange { values: items.iter().map(|i| {(i.ts, i.value)}).collect()})
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_range_data"),
-          ))
-      }
-    }
-}
-
-/// Represents a TS.MRANGE redis time series result with multiple entries. The concrete types for timestamp 
-/// and value eg <u64,f64> can be provided from the call site.
-#[derive(Debug)]
-pub struct TsMrange<TS: FromRedisValue + Copy,V: FromRedisValue + Copy> {
-    pub values: Vec<TsMrangeEntry<TS,V>>
-}
-
-impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default + FromRedisValue + Copy> FromRedisValue
-    for TsMrange<TS,V> {
+impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + FromRedisValue>
+    FromRedisValue for TsMget<TS, V>
+{
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let res = match *v {
-            Value::Bulk(ref values) => {
-                TsMrange { values: FromRedisValue::from_redis_values(values)?}
+            Value::Bulk(ref values) => TsMget {
+                values: FromRedisValue::from_redis_values(values)?,
             },
-            _ => TsMrange { values: vec![] }
+            _ => TsMget { values: vec![] },
         };
         Ok(res)
     }
 }
 
-/// Represents a TS.MRANGE redis time series value. The concrete types for timestamp 
+/// Represents a TS.MGET redis time series entry. The concrete types for timestamp
 /// and value eg <u64,f64> can be provided from the call site.
-#[derive(Debug,Default)]
-pub struct TsMrangeEntry<TS: FromRedisValue + Copy,V: FromRedisValue + Copy> {
+#[derive(Debug, Default)]
+pub struct TsMgetEntry<TS: FromRedisValue, V: FromRedisValue> {
     pub key: String,
-    pub labels: Vec<(String,String)>,
-    pub values: Vec<(TS,V)>
+    pub labels: Vec<(String, String)>,
+    pub value: Option<(TS, V)>,
 }
 
-impl <TS: std::default::Default + FromRedisValue + Copy,V: std::default::Default + FromRedisValue + Copy> FromRedisValue
-    for TsMrangeEntry<TS,V> {
+impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + FromRedisValue>
+    FromRedisValue for TsMgetEntry<TS, V>
+{
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-            let mut result = TsMrangeEntry::<TS,V>::default();
-            result.key = from_redis_value(&values[0]).unwrap();
-            result.labels = match values[1] {
-                Value::Bulk(ref vs) => {
-                    vs.iter().flat_map(|value| {
-                        match value {
+        match *v {
+            Value::Bulk(ref values) => {
+                let mut result = TsMgetEntry::<TS, V>::default();
+                result.key = from_redis_value(&values[0])?;
+                result.labels = match values[1] {
+                    Value::Bulk(ref vs) => vs
+                        .iter()
+                        .flat_map(|value| match value {
                             Value::Bulk(ref v) => Some((
-                                    from_redis_value(&v[0]).unwrap(),
-                                    from_redis_value(&v[1]).unwrap(),
-                                )),
+                                from_redis_value(&v[0]).unwrap(),
+                                from_redis_value(&v[1]).unwrap(),
+                            )),
                             _ => None,
-                        }
-                    }).collect()
-                },
-                _ => vec![]
-            };
+                        })
+                        .collect(),
+                    _ => vec![],
+                };
+                result.value = match values[2] {
+                    Value::Bulk(ref vs) if !vs.is_empty() => Some((
+                        from_redis_value(&vs[0]).unwrap(),
+                        from_redis_value(&vs[1]).unwrap(),
+                    )),
+                    _ => None,
+                };
 
-            result.values = match values[2] {
-                Value::Bulk(ref vs) => {
-                    let items:Vec<TsValueReply<TS,V>> = FromRedisValue::from_redis_values(&vs)?;
-                    items.iter().map(|i| {(i.ts, i.value)}).collect()
-                },
-                _ => vec![]
-            };
-            Ok(result)
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_mget_data"),
-          ))
-      }
+                Ok(result)
+            }
+            _ => Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "no_mget_data",
+            ))),
+        }
+    }
+}
+
+/// Represents a TS.RANGE redis time series result. The concrete types for timestamp
+/// and value eg <u64,f64> can be provided from the call site.
+#[derive(Debug)]
+pub struct TsRange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
+    pub values: Vec<(TS, V)>,
+}
+
+impl<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> FromRedisValue for TsRange<TS, V> {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        match *v {
+            Value::Bulk(ref values) => {
+                let items: Vec<TsValueReply<TS, V>> = FromRedisValue::from_redis_values(values)?;
+                Ok(TsRange {
+                    values: items.iter().map(|i| (i.ts, i.value)).collect(),
+                })
+            }
+            _ => Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "no_range_data",
+            ))),
+        }
+    }
+}
+
+/// Represents a TS.MRANGE redis time series result with multiple entries. The concrete types for timestamp
+/// and value eg <u64,f64> can be provided from the call site.
+#[derive(Debug)]
+pub struct TsMrange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
+    pub values: Vec<TsMrangeEntry<TS, V>>,
+}
+
+impl<
+        TS: std::default::Default + FromRedisValue + Copy,
+        V: std::default::Default + FromRedisValue + Copy,
+    > FromRedisValue for TsMrange<TS, V>
+{
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let res = match *v {
+            Value::Bulk(ref values) => TsMrange {
+                values: FromRedisValue::from_redis_values(values)?,
+            },
+            _ => TsMrange { values: vec![] },
+        };
+        Ok(res)
+    }
+}
+
+/// Represents a TS.MRANGE redis time series value. The concrete types for timestamp
+/// and value eg <u64,f64> can be provided from the call site.
+#[derive(Debug, Default)]
+pub struct TsMrangeEntry<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
+    pub key: String,
+    pub labels: Vec<(String, String)>,
+    pub values: Vec<(TS, V)>,
+}
+
+impl<
+        TS: std::default::Default + FromRedisValue + Copy,
+        V: std::default::Default + FromRedisValue + Copy,
+    > FromRedisValue for TsMrangeEntry<TS, V>
+{
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        match *v {
+            Value::Bulk(ref values) => {
+                let mut result = TsMrangeEntry::<TS, V>::default();
+                result.key = from_redis_value(&values[0]).unwrap();
+                result.labels = match values[1] {
+                    Value::Bulk(ref vs) => vs
+                        .iter()
+                        .flat_map(|value| match value {
+                            Value::Bulk(ref v) => Some((
+                                from_redis_value(&v[0]).unwrap(),
+                                from_redis_value(&v[1]).unwrap(),
+                            )),
+                            _ => None,
+                        })
+                        .collect(),
+                    _ => vec![],
+                };
+
+                result.values = match values[2] {
+                    Value::Bulk(ref vs) => {
+                        let items: Vec<TsValueReply<TS, V>> =
+                            FromRedisValue::from_redis_values(&vs)?;
+                        items.iter().map(|i| (i.ts, i.value)).collect()
+                    }
+                    _ => vec![],
+                };
+                Ok(result)
+            }
+            _ => Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "no_mget_data",
+            ))),
+        }
     }
 }
 
 #[derive(Debug)]
 struct TsValueReply<TS: FromRedisValue, V: FromRedisValue> {
-    pub ts:TS,
-    pub value:V
+    pub ts: TS,
+    pub value: V,
 }
 
-impl <TS: FromRedisValue, V: FromRedisValue> FromRedisValue for TsValueReply<TS,V> {
+impl<TS: FromRedisValue, V: FromRedisValue> FromRedisValue for TsValueReply<TS, V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
-      match *v {
-          Value::Bulk(ref values) => {
-              Ok(TsValueReply {
+        match *v {
+            Value::Bulk(ref values) => Ok(TsValueReply {
                 ts: from_redis_value(&values[0]).unwrap(),
                 value: from_redis_value(&values[1]).unwrap(),
-              })
-          },
-          _ => Err(RedisError::from(
-              std::io::Error::new(std::io::ErrorKind::Other, "no_value_data"),
-          ))
-      }
+            }),
+            _ => Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "no_value_data",
+            ))),
+        }
     }
 }
 
@@ -538,8 +570,10 @@ enum TsCompare {
 }
 
 impl ToRedisArgs for TsCompare {
-    fn write_redis_args<W>(&self, out: &mut W) where
-        W: ?Sized + RedisWrite {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
         let val = match *self {
             TsCompare::Eq => "=",
             TsCompare::NotEq => "!=",
@@ -549,18 +583,18 @@ impl ToRedisArgs for TsCompare {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct TsFilter {
-    name:String,
-    value:String,
-    compare:TsCompare
+    name: String,
+    value: String,
+    compare: TsCompare,
 }
 
 impl ToRedisArgs for TsFilter {
-
-    fn write_redis_args<W>(&self, out: &mut W) where
-        W: ?Sized + RedisWrite {
-
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
         let comp = match self.compare {
             TsCompare::Eq => "=",
             TsCompare::NotEq => "!=",
@@ -569,5 +603,4 @@ impl ToRedisArgs for TsFilter {
         let arg = format!("{}{}{}", self.name, comp, self.value);
         out.write_arg(arg.as_bytes());
     }
-
 }
