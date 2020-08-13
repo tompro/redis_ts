@@ -15,7 +15,7 @@ also need redis in your dependencies.
  ```ini
  [dependencies]
  redis = "0.17.0"
- redis_ts = "*"
+ redis_ts = "0.1.1"
  ```
 
  Or via git:
