@@ -2,14 +2,7 @@ version: "3.3"
 services:
   redis: 
     image: redislabs/redismod
-    volumes:
-      - "redis-centipode:/data"
     ports:
       - "6379:6379"
     networks:
       - test-redis
-
-volumes:
-  redis-centipode:
-networks:
-  test-redis:
