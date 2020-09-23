@@ -48,6 +48,54 @@ impl ToRedisArgs for TsAggregationType {
     }
 }
 
+/// Different options for handling inserts of duplicate values. Block 
+/// is the behaviour redis time series was using before preventing all 
+/// inserts of values older or equal to latest value in series. Fist 
+/// will simply ignore the new value (as opposed to returning an error),
+/// Last will use the new value, Min the lower and Max the higher value.
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum TsDuplicatePolicy {
+    Block,
+    First,
+    Last,
+    Min,
+    Max,
+    Other(String),
+}
+
+impl ToRedisArgs for TsDuplicatePolicy {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite 
+    {
+        let policy = match self {
+            TsDuplicatePolicy::Block => "BLOCK",
+            TsDuplicatePolicy::First => "FIRST",
+            TsDuplicatePolicy::Last => "LAST",
+            TsDuplicatePolicy::Min => "MIN",
+            TsDuplicatePolicy::Max => "MAX",
+            TsDuplicatePolicy::Other(v) => v.as_str().clone(),
+        };
+        out.write_arg(b"DUPLICATE_POLICY");
+        out.write_arg(policy.as_bytes());
+    }
+}
+
+impl FromRedisValue for TsDuplicatePolicy {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let string:String = from_redis_value(v)?;
+        let res = match string.as_str() {
+            "block" => TsDuplicatePolicy::Block,
+            "first" => TsDuplicatePolicy::First,
+            "last" => TsDuplicatePolicy::Last,
+            "min" => TsDuplicatePolicy::Min,
+            "max" => TsDuplicatePolicy::Max,
+            v => TsDuplicatePolicy::Other(v.to_string()),
+        };
+        Ok(res)
+    }
+}
+
 /// Options for a redis time series key. Can be used in multiple redis
 /// time series calls (CREATE, ALTER, ADD, ...). The uncompressed option
 /// will only be respected in a TS.CREATE.
@@ -56,6 +104,8 @@ pub struct TsOptions {
     retention_time: Option<u64>,
     uncompressed: bool,
     labels: Option<Vec<Vec<u8>>>,
+    duplicate_policy: Option<TsDuplicatePolicy>,
+    chunk_size: Option<u64>,
 }
 
 /// TsOptions allows you to build up your redis time series configuration. It
@@ -63,10 +113,13 @@ pub struct TsOptions {
 ///
 /// ```rust
 /// use redis_ts::TsOptions;
+/// use redis_ts::TsDuplicatePolicy;
 ///
 /// let opts:TsOptions = TsOptions::default()
 ///     .retention_time(60000)
 ///     .uncompressed(false)
+///     .chunk_size(16000)
+///     .duplicate_policy(TsDuplicatePolicy::Last)
 ///     .label("label_1", "value_1")
 ///     .label("label_2", "value_2");
 /// ```
@@ -109,6 +162,18 @@ impl TsOptions {
         self.labels = Some(res);
         self
     }
+
+    /// Overrides the servers default dplicatePoliciy.
+    pub fn duplicate_policy(mut self, policy: TsDuplicatePolicy) -> Self {
+        self.duplicate_policy = Some(policy);
+        self
+    }
+
+    /// Sets the allocation size for data in bytes.
+    pub fn chunk_size(mut self, size: u64) -> Self {
+        self.chunk_size = Some(size);
+        self
+    }
 }
 
 impl ToRedisArgs for TsOptions {
@@ -123,6 +188,15 @@ impl ToRedisArgs for TsOptions {
 
         if self.uncompressed {
             out.write_arg(b"UNCOMPRESSED");
+        }
+
+        if let Some(ref policy) = self.duplicate_policy {
+            policy.write_redis_args(out);
+        }
+
+        if let Some(ref alloc) = self.chunk_size {
+            out.write_arg(b"CHUNK_SIZE");
+            out.write_arg(format!("{}", alloc).as_bytes());
         }
 
         if let Some(ref l) = self.labels {
@@ -289,6 +363,8 @@ pub struct TsInfo {
     pub retention_time: u64,
     pub chunk_count: u64,
     pub max_samples_per_chunk: u16,
+    pub chunk_size: u64,
+    pub duplicate_policy: Option<TsDuplicatePolicy>,
     pub labels: Vec<(String, String)>,
     pub source_key: Option<String>,
     pub rules: Vec<(String, u64, String)>,
@@ -300,9 +376,12 @@ impl FromRedisValue for TsInfo {
             Value::Bulk(ref values) => {
                 let mut result = TsInfo::default();
                 let mut map: HashMap<String, Value> = HashMap::new();
+
                 for pair in values.chunks(2) {
                     map.insert(from_redis_value(&pair[0])?, pair[1].clone());
                 }
+                
+                //println!("{:?}", map);
 
                 if let Some(v) = map.get("totalSamples") {
                     result.total_samples = from_redis_value(v)?;
@@ -332,8 +411,16 @@ impl FromRedisValue for TsInfo {
                     result.max_samples_per_chunk = from_redis_value(v)?;
                 }
 
+                if let Some(v) = map.get("chunkSize") {
+                    result.chunk_size = from_redis_value(v)?;
+                }
+
                 if let Some(v) = map.get("sourceKey") {
                     result.source_key = from_redis_value(v)?;
+                }
+
+                if let Some(v) = map.get("duplicatePolicy") {
+                    result.duplicate_policy  = from_redis_value(v)?;
                 }
 
                 result.rules = match map.get("rules") {

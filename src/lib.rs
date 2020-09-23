@@ -79,6 +79,7 @@
 //! let my_opts = TsOptions::default()
 //!   .retention_time(60000)
 //!   .uncompressed(false)
+//!   .duplicate_policy(TsDuplicatePolicy::Last)
 //!   .label("component", "engine")
 //!   .label("sensor", "temperature");
 //!
@@ -323,7 +324,7 @@ pub use crate::async_commands::AsyncTsCommands;
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
-    TsAggregationType, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions, TsRange,
+    TsAggregationType, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions, TsRange, TsDuplicatePolicy
 };
 
 mod async_commands;

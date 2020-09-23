@@ -4,5 +4,3 @@ services:
     image: redislabs/redismod
     ports:
       - "6379:6379"
-    networks:
-      - test-redis
