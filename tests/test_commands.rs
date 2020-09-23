@@ -3,8 +3,8 @@ extern crate redis_ts;
 
 use redis::{Commands, Connection, Value};
 use redis_ts::{
-    TsAggregationType, TsCommands, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions, TsRange,
-    TsDuplicatePolicy
+    TsAggregationType, TsCommands, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange,
+    TsOptions, TsRange,
 };
 
 use std::thread;
@@ -73,8 +73,7 @@ fn test_create_ts_all() {
 #[test]
 fn test_create_ts_duplicate() {
     let _: () = get_con().del("test_ts_duplicate").unwrap();
-    let opts = TsOptions::default()
-        .duplicate_policy(TsDuplicatePolicy::Min);
+    let opts = TsOptions::default().duplicate_policy(TsDuplicatePolicy::Min);
     let r: Value = get_con().ts_create("test_ts_duplicate", opts).unwrap();
     assert_eq!(Value::Okay, r);
     let info: TsInfo = get_con().ts_info("test_ts_duplicate").unwrap();
@@ -95,11 +94,18 @@ fn test_ts_add() {
 fn test_ts_add_replace() {
     let _: () = get_con().del("test_ts_add_replace").unwrap();
     let _: Value = get_con()
-        .ts_create("test_ts_add_replace", default_settings().duplicate_policy(TsDuplicatePolicy::Last))
+        .ts_create(
+            "test_ts_add_replace",
+            default_settings().duplicate_policy(TsDuplicatePolicy::Last),
+        )
         .unwrap();
-    let _: u64 = get_con().ts_add("test_ts_add_replace", 1234567890, 2.2).unwrap();
-    let _: u64 = get_con().ts_add("test_ts_add_replace", 1234567890, 3.2).unwrap();
-    let stored: (u64,f64) = get_con().ts_get("test_ts_add_replace").unwrap().unwrap();
+    let _: u64 = get_con()
+        .ts_add("test_ts_add_replace", 1234567890, 2.2)
+        .unwrap();
+    let _: u64 = get_con()
+        .ts_add("test_ts_add_replace", 1234567890, 3.2)
+        .unwrap();
+    let stored: (u64, f64) = get_con().ts_get("test_ts_add_replace").unwrap().unwrap();
     assert_eq!(stored.1, 3.2);
 }
 
@@ -338,11 +344,13 @@ fn test_ts_mget() {
 fn test_ts_get_ts_info() {
     let _: () = get_con().del("test_ts_get_ts_info").unwrap();
     let _: Value = get_con()
-        .ts_create("test_ts_get_ts_info", 
-                   default_settings()
-                   .duplicate_policy(TsDuplicatePolicy::Last)
-                   .chunk_size(4096*2)
-        ).unwrap();
+        .ts_create(
+            "test_ts_get_ts_info",
+            default_settings()
+                .duplicate_policy(TsDuplicatePolicy::Last)
+                .chunk_size(4096 * 2),
+        )
+        .unwrap();
     let _: () = get_con()
         .ts_add("test_ts_get_ts_info", "1234", 2.0)
         .unwrap();
@@ -351,7 +359,7 @@ fn test_ts_get_ts_info() {
     assert_eq!(info.first_timestamp, 1234);
     assert_eq!(info.last_timestamp, 1234);
     assert_eq!(info.chunk_count, 1);
-    assert_eq!(info.chunk_size, 4096*2);
+    assert_eq!(info.chunk_size, 4096 * 2);
     assert_eq!(info.labels, vec![("a".to_string(), "b".to_string())]);
 }
 

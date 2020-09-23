@@ -48,9 +48,9 @@ impl ToRedisArgs for TsAggregationType {
     }
 }
 
-/// Different options for handling inserts of duplicate values. Block 
-/// is the behaviour redis time series was using before preventing all 
-/// inserts of values older or equal to latest value in series. Fist 
+/// Different options for handling inserts of duplicate values. Block
+/// is the behaviour redis time series was using before preventing all
+/// inserts of values older or equal to latest value in series. Fist
 /// will simply ignore the new value (as opposed to returning an error),
 /// Last will use the new value, Min the lower and Max the higher value.
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -66,7 +66,7 @@ pub enum TsDuplicatePolicy {
 impl ToRedisArgs for TsDuplicatePolicy {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite 
+        W: ?Sized + RedisWrite,
     {
         let policy = match self {
             TsDuplicatePolicy::Block => "BLOCK",
@@ -83,7 +83,7 @@ impl ToRedisArgs for TsDuplicatePolicy {
 
 impl FromRedisValue for TsDuplicatePolicy {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
-        let string:String = from_redis_value(v)?;
+        let string: String = from_redis_value(v)?;
         let res = match string.as_str() {
             "block" => TsDuplicatePolicy::Block,
             "first" => TsDuplicatePolicy::First,
@@ -380,7 +380,7 @@ impl FromRedisValue for TsInfo {
                 for pair in values.chunks(2) {
                     map.insert(from_redis_value(&pair[0])?, pair[1].clone());
                 }
-                
+
                 //println!("{:?}", map);
 
                 if let Some(v) = map.get("totalSamples") {
@@ -420,7 +420,7 @@ impl FromRedisValue for TsInfo {
                 }
 
                 if let Some(v) = map.get("duplicatePolicy") {
-                    result.duplicate_policy  = from_redis_value(v)?;
+                    result.duplicate_policy = from_redis_value(v)?;
                 }
 
                 result.rules = match map.get("rules") {

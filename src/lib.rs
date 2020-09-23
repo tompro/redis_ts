@@ -73,7 +73,7 @@
 //! ```rust,no_run
 //! # fn run() -> redis::RedisResult<()> {
 //! # use redis::Commands;
-//! # use redis_ts::{TsCommands, TsOptions};
+//! # use redis_ts::{TsCommands, TsOptions, TsDuplicatePolicy};
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let my_opts = TsOptions::default()
@@ -324,7 +324,8 @@ pub use crate::async_commands::AsyncTsCommands;
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
-    TsAggregationType, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions, TsRange, TsDuplicatePolicy
+    TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
+    TsRange,
 };
 
 mod async_commands;

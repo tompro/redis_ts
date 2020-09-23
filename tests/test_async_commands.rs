@@ -6,7 +6,10 @@ use async_std::task;
 use redis::aio::Connection;
 use redis::AsyncCommands;
 use redis_ts::AsyncTsCommands;
-use redis_ts::{TsAggregationType, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions, TsRange, TsDuplicatePolicy};
+use redis_ts::{
+    TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
+    TsRange,
+};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -35,8 +38,9 @@ fn test_ts_create_info() {
         let _: () = con
             .ts_create(
                 "async_test_ts_info",
-                TsOptions::default().label("l", "async_test_ts_info")
-                .duplicate_policy(TsDuplicatePolicy::Max),
+                TsOptions::default()
+                    .label("l", "async_test_ts_info")
+                    .duplicate_policy(TsDuplicatePolicy::Max),
             )
             .await
             .unwrap();
@@ -104,15 +108,29 @@ fn test_ts_add_create() {
 
 #[test]
 fn test_ts_add_replace() {
-    let _:() = task::block_on(async {
+    let _: () = task::block_on(async {
         let mut con = get_con().await;
         let _: () = con.del("async_test_ts_add_replace").await.unwrap();
-        let _: () = con.ts_create("async_test_ts_add_replace", 
-                       TsOptions::default().duplicate_policy(TsDuplicatePolicy::Last)
-            ).await.unwrap();
-        let _: u64 = con.ts_add("async_test_ts_add_replace", 1234567890u64, 2.2f64).await.unwrap();
-        let _: u64 = con.ts_add("async_test_ts_add_replace", 1234567890u64, 3.2f64).await.unwrap();
-        let stored: (u64,f64) = con.ts_get("async_test_ts_add_replace").await.unwrap().unwrap();
+        let _: () = con
+            .ts_create(
+                "async_test_ts_add_replace",
+                TsOptions::default().duplicate_policy(TsDuplicatePolicy::Last),
+            )
+            .await
+            .unwrap();
+        let _: u64 = con
+            .ts_add("async_test_ts_add_replace", 1234567890u64, 2.2f64)
+            .await
+            .unwrap();
+        let _: u64 = con
+            .ts_add("async_test_ts_add_replace", 1234567890u64, 3.2f64)
+            .await
+            .unwrap();
+        let stored: (u64, f64) = con
+            .ts_get("async_test_ts_add_replace")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(stored.1, 3.2);
     });
 }
@@ -377,9 +395,10 @@ fn test_ts_get_ts_info() {
         let _: () = con
             .ts_create(
                 "async_test_ts_get_ts_info",
-                TsOptions::default().label("a", "b")
-                .duplicate_policy(TsDuplicatePolicy::Block)
-                .chunk_size(4096*2)
+                TsOptions::default()
+                    .label("a", "b")
+                    .duplicate_policy(TsDuplicatePolicy::Block)
+                    .chunk_size(4096 * 2),
             )
             .await
             .unwrap();
@@ -393,7 +412,7 @@ fn test_ts_get_ts_info() {
         assert_eq!(info.last_timestamp, 1234);
         assert_eq!(info.chunk_count, 1);
         assert_eq!(info.duplicate_policy, Some(TsDuplicatePolicy::Block));
-        assert_eq!(info.chunk_size, 4096*2);
+        assert_eq!(info.chunk_size, 4096 * 2);
         assert_eq!(info.labels, vec![("a".to_string(), "b".to_string())]);
     });
 }
