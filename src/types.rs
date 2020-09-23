@@ -74,7 +74,7 @@ impl ToRedisArgs for TsDuplicatePolicy {
             TsDuplicatePolicy::Last => "LAST",
             TsDuplicatePolicy::Min => "MIN",
             TsDuplicatePolicy::Max => "MAX",
-            TsDuplicatePolicy::Other(v) => v.as_str().clone(),
+            TsDuplicatePolicy::Other(v) => v.as_str(),
         };
         out.write_arg(b"DUPLICATE_POLICY");
         out.write_arg(policy.as_bytes());
