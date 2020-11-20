@@ -297,7 +297,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
                 .arg(key)
                 .query_async(self)
                 .await
-                .or_else(|_| Ok(None))
+                .or(Ok(None))
         })
     }
 

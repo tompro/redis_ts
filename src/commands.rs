@@ -248,7 +248,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         &mut self,
         key: K,
     ) -> RedisResult<Option<(TS, V)>> {
-        cmd("TS.GET").arg(key).query(self).or_else(|_| Ok(None))
+        cmd("TS.GET").arg(key).query(self).or(Ok(None))
     }
 
     /// Returns the latest (current) value from multiple redis time series.
