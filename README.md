@@ -1,6 +1,6 @@
 # redis_ts
 
-[![crates.io](https://img.shields.io/badge/crates.io-v0.2.0-orange)](https://crates.io/crates/redis_ts)
+[![crates.io](https://img.shields.io/badge/crates.io-v0.2.1-orange)](https://crates.io/crates/redis_ts)
 ![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
 
 redis_ts proivdes a small trait with extension functions for the 
