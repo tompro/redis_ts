@@ -292,13 +292,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         &'a mut self,
         key: K,
     ) -> RedisFuture<Option<(TS, V)>> {
-        Box::pin(async move {
-            cmd("TS.GET")
-                .arg(key)
-                .query_async(self)
-                .await
-                .or(Ok(None))
-        })
+        Box::pin(async move { cmd("TS.GET").arg(key).query_async(self).await.or(Ok(None)) })
     }
 
     /// Returns the latest (current) value from multiple redis time series.
