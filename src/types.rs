@@ -498,27 +498,28 @@ impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + From
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
             Value::Bulk(ref values) => {
-                let mut result = TsMgetEntry::<TS, V>::default();
-                result.key = from_redis_value(&values[0])?;
-                result.labels = match values[1] {
-                    Value::Bulk(ref vs) => vs
-                        .iter()
-                        .flat_map(|value| match value {
-                            Value::Bulk(ref v) => Some((
-                                from_redis_value(&v[0]).unwrap(),
-                                from_redis_value(&v[1]).unwrap(),
-                            )),
-                            _ => None,
-                        })
-                        .collect(),
-                    _ => vec![],
-                };
-                result.value = match values[2] {
-                    Value::Bulk(ref vs) if !vs.is_empty() => Some((
-                        from_redis_value(&vs[0]).unwrap(),
-                        from_redis_value(&vs[1]).unwrap(),
-                    )),
-                    _ => None,
+                let result = TsMgetEntry::<TS, V>{
+                    key: from_redis_value(&values[0])?,
+                    labels: match values[1] {
+                        Value::Bulk(ref vs) => vs
+                            .iter()
+                            .flat_map(|value| match value {
+                                Value::Bulk(ref v) => Some((
+                                    from_redis_value(&v[0]).unwrap(),
+                                    from_redis_value(&v[1]).unwrap(),
+                                )),
+                                _ => None,
+                            })
+                            .collect(),
+                        _ => vec![],
+                    },
+                    value: match values[2] {
+                        Value::Bulk(ref vs) if !vs.is_empty() => Some((
+                            from_redis_value(&vs[0]).unwrap(),
+                            from_redis_value(&vs[1]).unwrap(),
+                        )),
+                        _ => None,
+                    }
                 };
 
                 Ok(result)
@@ -595,30 +596,31 @@ impl<
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
             Value::Bulk(ref values) => {
-                let mut result = TsMrangeEntry::<TS, V>::default();
-                result.key = from_redis_value(&values[0]).unwrap();
-                result.labels = match values[1] {
-                    Value::Bulk(ref vs) => vs
-                        .iter()
-                        .flat_map(|value| match value {
-                            Value::Bulk(ref v) => Some((
-                                from_redis_value(&v[0]).unwrap(),
-                                from_redis_value(&v[1]).unwrap(),
-                            )),
-                            _ => None,
-                        })
-                        .collect(),
-                    _ => vec![],
+                let result = TsMrangeEntry::<TS, V> {
+                    key: from_redis_value(&values[0]).unwrap(),
+                    labels: match values[1] {
+                        Value::Bulk(ref vs) => vs
+                            .iter()
+                            .flat_map(|value| match value {
+                                Value::Bulk(ref v) => Some((
+                                    from_redis_value(&v[0]).unwrap(),
+                                    from_redis_value(&v[1]).unwrap(),
+                                )),
+                                _ => None,
+                            })
+                            .collect(),
+                        _ => vec![],
+                    },
+                    values: match values[2] {
+                        Value::Bulk(ref vs) => {
+                            let items: Vec<TsValueReply<TS, V>> =
+                                FromRedisValue::from_redis_values(&vs)?;
+                            items.iter().map(|i| (i.ts, i.value)).collect()
+                        }
+                        _ => vec![],
+                    },
                 };
-
-                result.values = match values[2] {
-                    Value::Bulk(ref vs) => {
-                        let items: Vec<TsValueReply<TS, V>> =
-                            FromRedisValue::from_redis_values(&vs)?;
-                        items.iter().map(|i| (i.ts, i.value)).collect()
-                    }
-                    _ => vec![],
-                };
+                
                 Ok(result)
             }
             _ => Err(RedisError::from(std::io::Error::new(
