@@ -498,7 +498,7 @@ impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + From
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
             Value::Bulk(ref values) => {
-                let result = TsMgetEntry::<TS, V>{
+                let result = TsMgetEntry::<TS, V> {
                     key: from_redis_value(&values[0])?,
                     labels: match values[1] {
                         Value::Bulk(ref vs) => vs
@@ -519,7 +519,7 @@ impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + From
                             from_redis_value(&vs[1]).unwrap(),
                         )),
                         _ => None,
-                    }
+                    },
                 };
 
                 Ok(result)
@@ -620,7 +620,7 @@ impl<
                         _ => vec![],
                     },
                 };
-                
+
                 Ok(result)
             }
             _ => Err(RedisError::from(std::io::Error::new(
