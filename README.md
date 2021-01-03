@@ -1,6 +1,6 @@
 # redis_ts
 
-[![crates.io](https://img.shields.io/badge/crates.io-v0.2.1-orange)](https://crates.io/crates/redis_ts)
+[![crates.io](https://img.shields.io/badge/crates.io-v0.2.2-orange)](https://crates.io/crates/redis_ts)
 ![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
 
 redis_ts proivdes a small trait with extension functions for the 
@@ -15,7 +15,7 @@ also need redis in your dependencies.
  ```ini
  [dependencies]
  redis = "0.17.0"
- redis_ts = "0.2.1"
+ redis_ts = "0.2.2"
  ```
 
  Or via git:

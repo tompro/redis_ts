@@ -9,7 +9,7 @@
 //!
 //! ```ini
 //! [dependencies]
-//! redis = "0.16.0"
+//! redis = "0.17.0"
 //! redis_ts = "*"
 //! ```
 //!
