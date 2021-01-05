@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/badge/crates.io-v0.2.2-orange)](https://crates.io/crates/redis_ts)
 ![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
 
-redis_ts proivdes a small trait with extension functions for the 
+redis_ts provides a small trait with extension functions for the 
 [redis](https://docs.rs/redis/0.17.0/redis) crate to allow 
 working with redis time series data that can be installed as 
 a [redis module](https://oss.redislabs.com/redistimeseries). Time 
@@ -14,8 +14,8 @@ also need redis in your dependencies.
 
  ```ini
  [dependencies]
- redis = "0.17.0"
- redis_ts = "0.2.2"
+ redis = "0.19.0"
+ redis_ts = "0.3.0"
  ```
 
  Or via git:
@@ -24,7 +24,13 @@ also need redis in your dependencies.
  [dependencies.redis_ts]
  git = "https://github.com/tompro/redis_ts.git"
  ```
- 
+
+With async feature inherited from the [redis](https://docs.rs/redis/0.17.0/redis) crate (either: 'async-std-comp' or 'tokio-comp):
+```ini
+ [dependencies]
+ redis = "0.19.0"
+ redis_ts = { version = "0.3.0", features = ['tokio-comp'] }
+``` 
  
  ## Synchronous usage
  
