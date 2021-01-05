@@ -9,7 +9,7 @@
 //!
 //! ```ini
 //! [dependencies]
-//! redis = "0.17.0"
+//! redis = "0.19.0"
 //! redis_ts = "*"
 //! ```
 //!
@@ -20,6 +20,13 @@
 //! git = "https://github.com/tompro/redis_ts.git"
 //! ```
 //!
+//! With async feature inherited from the [redis](https://docs.rs/redis/0.17.0/redis)
+//! crate (either: 'async-std-comp' or 'tokio-comp):
+//! ```ini
+//! [dependencies]
+//! redis = "0.19.0"
+//! redis_ts = { version = "0.3.0", features = ['tokio-comp'] }
+//! ```
 //!
 //! # Synchronous usage
 //!
@@ -48,6 +55,7 @@
 //! commands will then be available on your async redis connection.
 //!
 //! ```rust,no_run
+//! # #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
 //! # async fn run() -> redis::RedisResult<()> {
 //! use redis::AsyncCommands;
 //! use redis_ts::{AsyncTsCommands, TsOptions};
@@ -320,7 +328,9 @@
 //! # Ok(()) }
 //! ```
 //!
+#[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
 pub use crate::async_commands::AsyncTsCommands;
+
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
@@ -328,6 +338,8 @@ pub use crate::types::{
     TsRange,
 };
 
+#[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
 mod async_commands;
+
 mod commands;
 mod types;
