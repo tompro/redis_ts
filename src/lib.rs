@@ -1,5 +1,5 @@
 //! redis_ts proivdes a small trait with extension functions for the
-//! [redis](https://docs.rs/redis/0.16.0/redis) crate to allow
+//! [redis](https://docs.rs/redis) crate to allow
 //! working with redis time series data that can be installed as
 //! a [redis module](https://oss.redislabs.com/redistimeseries). Time
 //! series commands are available as synchronous and asynchronous versions.
@@ -20,7 +20,7 @@
 //! git = "https://github.com/tompro/redis_ts.git"
 //! ```
 //!
-//! With async feature inherited from the [redis](https://docs.rs/redis/0.17.0/redis)
+//! With async feature inherited from the [redis](https://docs.rs/redis)
 //! crate (either: 'async-std-comp' or 'tokio-comp):
 //! ```ini
 //! [dependencies]
