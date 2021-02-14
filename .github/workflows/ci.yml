@@ -49,6 +49,9 @@ jobs:
         with:
           command: test
           args: --all-features
+        env:
+          REDIS_HOST: 0.0.0.0
+          REDIS_PORT: 6379
 
   fmt:
     name: Rustfmt
