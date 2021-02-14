@@ -9,9 +9,9 @@ use redis_ts::{
     TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
     TsRange,
 };
+use std::env;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::env;
 
 async fn get_con() -> Connection {
     let client = redis::Client::open(get_redis_url()).unwrap();
@@ -428,19 +428,18 @@ pub async fn ts_queryindex(name: &str) {
     assert!(index.contains(&name.to_string()));
 }
 
-
 fn get_redis_url() -> String {
     let redis_host_key = "REDIS_HOST";
     let redis_host_port = "REDIS_PORT";
-    
+
     let redis_host = match env::var(redis_host_key) {
         Ok(host) => host,
-        _ => "localhost".to_string()
+        _ => "localhost".to_string(),
     };
 
     let redis_port = match env::var(redis_host_port) {
         Ok(port) => port,
-        _ => "6379".to_string()
+        _ => "6379".to_string(),
     };
 
     format!("redis://{}:{}/", redis_host, redis_port)
