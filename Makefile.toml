@@ -1,0 +1,41 @@
+[tasks.publish]
+description = "Publish to crates.io"
+dependencies = ["gh_checks"]
+command = "cargo"
+args = ["publish", "--all-features"]
+
+[tasks.gh_checks]
+dependencies = [
+	"cargo_check",
+	"test",
+	"check_fmt",
+	"clippy"
+]
+
+[tasks.cargo_check]
+description = "Runs cargo check"
+command = "cargo"
+args = ["check"]
+
+[tasks.check_fmt]
+description = "Runs fmt in check mode"
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--all", "--", "--check"]
+
+[tasks.test]
+description = "Runs tests with all features"
+command = "cargo"
+args = ["test", "--all-features"]
+
+[tasks.doc]
+description = "Generates docs with all features"
+command = "cargo"
+args = ["doc", "--all-features"]
+
+[tasks.clippy]
+description = "Runs clippy"
+install_crate = "clippy"
+command = "cargo"
+args = ["clippy", "--", "-D warnings"]
+
