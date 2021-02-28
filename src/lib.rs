@@ -5,7 +5,7 @@
 //! series commands are available as synchronous and asynchronous versions.
 //!
 //! The crate is called `redis_ts` and you can depend on it via cargo. You will
-//! also need redis in your dependencies. It has been tested agains redis 0.20.0 
+//! also need redis in your dependencies. It has been tested agains redis 0.20.0
 //! but should work with versions higher than that.
 //!
 //! ```ini

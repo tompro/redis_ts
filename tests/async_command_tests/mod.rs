@@ -352,6 +352,52 @@ pub async fn ts_range(name: &str) {
     assert_eq!(res.values, vec![]);
 }
 
+pub async fn ts_revrange(name: &str) {
+    let name2 = &format!("{:}2", name);
+    let mut con = prepare_ts(name).await;
+    let _ = prepare_ts(name2).await;
+    let _: () = con
+        .ts_madd(&[(name, 12, 1.0), (name, 123, 2.0), (name, 1234, 3.0)])
+        .await
+        .unwrap();
+
+    let res: TsRange<u64, f64> = con
+        .ts_revrange(name, "-", "+", None::<usize>, None)
+        .await
+        .unwrap();
+    assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
+
+    let one_res: TsRange<u64, f64> = con
+        .ts_revrange(name, "-", "+", Some(1), None)
+        .await
+        .unwrap();
+    assert_eq!(one_res.values, vec![(1234, 3.0)]);
+
+    let range_res: TsRange<u64, f64> = con
+        .ts_revrange(name, 12, 123, None::<usize>, None)
+        .await
+        .unwrap();
+    assert_eq!(range_res.values, vec![(123, 2.0), (12, 1.0)]);
+
+    let sum: TsRange<u64, f64> = con
+        .ts_revrange(
+            name,
+            12,
+            123,
+            None::<usize>,
+            Some(TsAggregationType::Sum(10000)),
+        )
+        .await
+        .unwrap();
+    assert_eq!(sum.values, vec![(0, 3.0)]);
+
+    let res: TsRange<u64, f64> = con
+        .ts_revrange(name2, "-", "+", None::<usize>, None)
+        .await
+        .unwrap();
+    assert_eq!(res.values, vec![]);
+}
+
 pub async fn ts_mrange(name: &str) {
     let name2: &str = &format!("{:}2", name);
     let label = &format!("{:}label", name);
@@ -400,6 +446,67 @@ pub async fn ts_mrange(name: &str) {
 
     let res2: TsMrange<u64, f64> = con
         .ts_mrange(
+            "-",
+            "+",
+            None::<usize>,
+            None,
+            TsFilterOptions::default()
+                .equals("none", "existing")
+                .with_labels(true),
+        )
+        .await
+        .unwrap();
+    assert!(res2.values.is_empty());
+}
+
+pub async fn ts_mrevrange(name: &str) {
+    let name2: &str = &format!("{:}2", name);
+    let label = &format!("{:}label", name);
+
+    let mut con = get_con().await;
+    let _: () = con.del(name).await.unwrap();
+    let _: () = con.del(name2).await.unwrap();
+    let opts: TsOptions = TsOptions::default().label("l", label);
+    let _: () = con.ts_create(name, opts.clone()).await.unwrap();
+    let _: () = con.ts_create(name2, opts.clone()).await.unwrap();
+    let _: () = con
+        .ts_madd(&[
+            (name, 12, 1.0),
+            (name, 123, 2.0),
+            (name, 1234, 3.0),
+            (name2, 21, 1.0),
+            (name2, 321, 2.0),
+            (name2, 4321, 3.0),
+        ])
+        .await
+        .unwrap();
+
+    let res: TsMrange<u64, f64> = con
+        .ts_mrevrange(
+            "-",
+            "+",
+            None::<usize>,
+            None,
+            TsFilterOptions::default()
+                .equals("l", label)
+                .with_labels(true),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.values.len(), 2);
+    assert_eq!(
+        res.values[1].values,
+        vec![(4321, 3.0), (321, 2.0), (21, 1.0)]
+    );
+    assert_eq!(res.values[0].key, name);
+    assert_eq!(res.values[1].key, name2);
+    assert_eq!(
+        res.values[0].labels,
+        vec![("l".to_string(), label.to_string())]
+    );
+
+    let res2: TsMrange<u64, f64> = con
+        .ts_mrevrange(
             "-",
             "+",
             None::<usize>,

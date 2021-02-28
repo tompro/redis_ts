@@ -306,6 +306,32 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         Box::pin(async move { cmd("TS.MGET").arg(filter_options).query_async(self).await })
     }
 
+    #[doc(hidden)]
+    fn range<
+        'a,
+        K: ToRedisArgs + Send + Sync + 'a,
+        FTS: ToRedisArgs + Send + Sync + 'a,
+        TTS: ToRedisArgs + Send + Sync + 'a,
+        C: ToRedisArgs + Send + Sync + 'a,
+        TS: std::marker::Copy + FromRedisValue,
+        V: std::marker::Copy + FromRedisValue,
+    >(
+        &'a mut self,
+        command: &str,
+        key: K,
+        from_timestamp: FTS,
+        to_timestamp: TTS,
+        count: Option<C>,
+        aggregation_type: Option<TsAggregationType>,
+    ) -> RedisFuture<TsRange<TS, V>> {
+        let mut c = cmd(command);
+        c.arg(key).arg(from_timestamp).arg(to_timestamp);
+        if let Some(ct) = count {
+            c.arg("COUNT").arg(ct);
+        }
+        Box::pin(async move { c.arg(aggregation_type).query_async(self).await })
+    }
+
     /// Executes a redis time series range query.
     fn ts_range<
         'a,
@@ -323,12 +349,67 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         count: Option<C>,
         aggregation_type: Option<TsAggregationType>,
     ) -> RedisFuture<TsRange<TS, V>> {
-        let mut c = cmd("TS.RANGE");
-        c.arg(key).arg(from_timestamp).arg(to_timestamp);
+        self.range(
+            "TS.RANGE",
+            key,
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+        )
+    }
+
+    /// Executes a redis time series revrange query.
+    fn ts_revrange<
+        'a,
+        K: ToRedisArgs + Send + Sync + 'a,
+        FTS: ToRedisArgs + Send + Sync + 'a,
+        TTS: ToRedisArgs + Send + Sync + 'a,
+        C: ToRedisArgs + Send + Sync + 'a,
+        TS: std::marker::Copy + FromRedisValue,
+        V: std::marker::Copy + FromRedisValue,
+    >(
+        &'a mut self,
+        key: K,
+        from_timestamp: FTS,
+        to_timestamp: TTS,
+        count: Option<C>,
+        aggregation_type: Option<TsAggregationType>,
+    ) -> RedisFuture<TsRange<TS, V>> {
+        self.range(
+            "TS.REVRANGE",
+            key,
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+        )
+    }
+
+    #[doc(hidden)]
+    fn mrange<
+        'a,
+        FTS: ToRedisArgs + Send + Sync + 'a,
+        TTS: ToRedisArgs + Send + Sync + 'a,
+        C: ToRedisArgs + Send + Sync + 'a,
+        TS: std::default::Default + FromRedisValue + Copy,
+        V: std::default::Default + FromRedisValue + Copy,
+    >(
+        &mut self,
+        command: &str,
+        from_timestamp: FTS,
+        to_timestamp: TTS,
+        count: Option<C>,
+        aggregation_type: Option<TsAggregationType>,
+        filter_options: TsFilterOptions,
+    ) -> RedisFuture<TsMrange<TS, V>> {
+        let mut c = cmd(command);
+        c.arg(from_timestamp).arg(to_timestamp);
         if let Some(ct) = count {
             c.arg("COUNT").arg(ct);
         }
-        Box::pin(async move { c.arg(aggregation_type).query_async(self).await })
+        c.arg(aggregation_type).arg(filter_options);
+        Box::pin(async move { c.query_async(self).await })
     }
 
     /// Executes multiple redis time series range queries.
@@ -347,13 +428,40 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         aggregation_type: Option<TsAggregationType>,
         filter_options: TsFilterOptions,
     ) -> RedisFuture<TsMrange<TS, V>> {
-        let mut c = cmd("TS.MRANGE");
-        c.arg(from_timestamp).arg(to_timestamp);
-        if let Some(ct) = count {
-            c.arg("COUNT").arg(ct);
-        }
-        c.arg(aggregation_type).arg(filter_options);
-        Box::pin(async move { c.query_async(self).await })
+        self.mrange(
+            "TS.MRANGE",
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+            filter_options,
+        )
+    }
+
+    /// Executes multiple redis time series revrange queries.
+    fn ts_mrevrange<
+        'a,
+        FTS: ToRedisArgs + Send + Sync + 'a,
+        TTS: ToRedisArgs + Send + Sync + 'a,
+        C: ToRedisArgs + Send + Sync + 'a,
+        TS: std::default::Default + FromRedisValue + Copy,
+        V: std::default::Default + FromRedisValue + Copy,
+    >(
+        &mut self,
+        from_timestamp: FTS,
+        to_timestamp: TTS,
+        count: Option<C>,
+        aggregation_type: Option<TsAggregationType>,
+        filter_options: TsFilterOptions,
+    ) -> RedisFuture<TsMrange<TS, V>> {
+        self.mrange(
+            "TS.MREVRANGE",
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+            filter_options,
+        )
     }
 
     /// Returns a filtered list of redis time series keys.

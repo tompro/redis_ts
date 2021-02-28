@@ -525,7 +525,9 @@ fn test_ts_mrevrange() {
     let _: () = get_con().del("test_ts_mrevrange").unwrap();
     let _: () = get_con().del("test_ts_mrevrange2").unwrap();
     let opts: TsOptions = TsOptions::default().label("l", "mrevrange");
-    let _: () = get_con().ts_create("test_ts_mrevrange", opts.clone()).unwrap();
+    let _: () = get_con()
+        .ts_create("test_ts_mrevrange", opts.clone())
+        .unwrap();
     let _: () = get_con()
         .ts_create("test_ts_mrevrange2", opts.clone())
         .unwrap();

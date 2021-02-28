@@ -194,7 +194,7 @@ pub trait TsCommands: ConnectionLike + Sized {
             .arg(dest_key)
             .query(self)
     }
-    
+
     #[doc(hidden)]
     fn range<
         K: ToRedisArgs,
@@ -220,7 +220,6 @@ pub trait TsCommands: ConnectionLike + Sized {
         c.arg(aggregation_type).query(self)
     }
 
-
     /// Executes a redis time series range query.
     fn ts_range<
         K: ToRedisArgs,
@@ -237,9 +236,16 @@ pub trait TsCommands: ConnectionLike + Sized {
         count: Option<C>,
         aggregation_type: Option<TsAggregationType>,
     ) -> RedisResult<TsRange<TS, V>> {
-        self.range("TS.RANGE", key, from_timestamp, to_timestamp, count, aggregation_type)
+        self.range(
+            "TS.RANGE",
+            key,
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+        )
     }
-    
+
     /// Executes a redis time series revrange query.
     fn ts_revrange<
         K: ToRedisArgs,
@@ -256,7 +262,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         count: Option<C>,
         aggregation_type: Option<TsAggregationType>,
     ) -> RedisResult<TsRange<TS, V>> {
-        self.range("TS.REVRANGE", key, from_timestamp, to_timestamp, count, aggregation_type)
+        self.range(
+            "TS.REVRANGE",
+            key,
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+        )
     }
 
     #[doc(hidden)]
@@ -299,7 +312,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         aggregation_type: Option<TsAggregationType>,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMrange<TS, V>> {
-        self.mrange("TS.MRANGE", from_timestamp, to_timestamp, count, aggregation_type, filter_options)
+        self.mrange(
+            "TS.MRANGE",
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+            filter_options,
+        )
     }
 
     /// Executes multiple redis time series revrange queries.
@@ -317,7 +337,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         aggregation_type: Option<TsAggregationType>,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMrange<TS, V>> {
-        self.mrange("TS.MREVRANGE", from_timestamp, to_timestamp, count, aggregation_type, filter_options)
+        self.mrange(
+            "TS.MREVRANGE",
+            from_timestamp,
+            to_timestamp,
+            count,
+            aggregation_type,
+            filter_options,
+        )
     }
 
     /// Returns the latest (current) value in a redis time series.
