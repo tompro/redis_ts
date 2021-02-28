@@ -5,12 +5,13 @@
 //! series commands are available as synchronous and asynchronous versions.
 //!
 //! The crate is called `redis_ts` and you can depend on it via cargo. You will
-//! also need redis in your dependencies.
+//! also need redis in your dependencies. It has been tested agains redis 0.20.0
+//! but should work with versions higher than that.
 //!
 //! ```ini
 //! [dependencies]
-//! redis = "0.19.0"
-//! redis_ts = "*"
+//! redis = "0.20.0"
+//! redis_ts = "0.4.0"
 //! ```
 //!
 //! Or via git:
@@ -24,8 +25,8 @@
 //! crate (either: 'async-std-comp' or 'tokio-comp):
 //! ```ini
 //! [dependencies]
-//! redis = "0.19.0"
-//! redis_ts = { version = "0.3.0", features = ['tokio-comp'] }
+//! redis = "0.20.0"
+//! redis_ts = { version = "0.4.0", features = ['tokio-comp'] }
 //! ```
 //!
 //! # Synchronous usage
@@ -232,7 +233,7 @@
 //! # Ok(()) }
 //! ```
 //!
-//! ## TS.RANGE
+//! ## TS.RANGE/TS.REVRANGE
 //! Query for a range of time series data.
 //!
 //! ```rust,no_run
@@ -248,10 +249,14 @@
 //! let range_raw:TsRange<u64,f64> = con.ts_range(
 //!     "my_engine", 1234, 5678, None::<usize>, None
 //! )?;
+//!
+//! let rev_range_raw:TsRange<u64,f64> = con.ts_revrange(
+//!     "my_engine", 1234, 5678, None::<usize>, None
+//! )?;
 //! # Ok(()) }
 //! ```
 //!
-//! ## TS.MRANGE
+//! ## TS.MRANGE/TS.MREVRANGE
 //! Batch query multiple ranges of time series data.
 //!
 //! ```rust,no_run
@@ -266,6 +271,11 @@
 //! )?;
 //!
 //! let range_raw:TsMrange<u64,f64> = con.ts_mrange(
+//!     1234, 5678, None::<usize>, None,
+//!     TsFilterOptions::default().equals("sensor", "temperature")
+//! )?;
+//!
+//! let rev_range_raw:TsMrange<u64,f64> = con.ts_mrevrange(
 //!     1234, 5678, None::<usize>, None,
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;

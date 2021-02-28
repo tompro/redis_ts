@@ -103,8 +103,18 @@ fn test_ts_range() {
 }
 
 #[test]
+fn test_ts_revrange() {
+    let _: () = block_on(ts_revrange("async_test_ts_revrange_tokio"));
+}
+
+#[test]
 fn test_ts_mrange() {
     let _: () = block_on(ts_mrange("async_test_ts_mrange_tokio"));
+}
+
+#[test]
+fn test_ts_mrevrange() {
+    let _: () = block_on(ts_mrevrange("async_test_ts_mrevrange_tokio"));
 }
 
 #[test]

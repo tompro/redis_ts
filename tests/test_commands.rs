@@ -414,6 +414,56 @@ fn test_ts_range() {
 }
 
 #[test]
+fn test_ts_revrange() {
+    let _: () = get_con().del("test_ts_revrange").unwrap();
+    let _: () = get_con().del("test_ts_revrange2").unwrap();
+    let _: () = get_con()
+        .ts_create("test_ts_revrange", default_settings())
+        .unwrap();
+    let _: () = get_con()
+        .ts_create("test_ts_revrange2", default_settings())
+        .unwrap();
+    let _: () = get_con()
+        .ts_madd(&[
+            ("test_ts_revrange", 12, 1.0),
+            ("test_ts_revrange", 123, 2.0),
+            ("test_ts_revrange", 1234, 3.0),
+        ])
+        .unwrap();
+
+    let res: TsRange<u64, f64> = get_con()
+        .ts_revrange("test_ts_revrange", "-", "+", None::<usize>, None)
+        .unwrap();
+    assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
+
+    let one_res: TsRange<u64, f64> = get_con()
+        .ts_revrange("test_ts_revrange", "-", "+", Some(1), None)
+        .unwrap();
+    assert_eq!(one_res.values, vec![(1234, 3.0)]);
+
+    let range_res: TsRange<u64, f64> = get_con()
+        .ts_revrange("test_ts_revrange", 12, 123, None::<usize>, None)
+        .unwrap();
+    assert_eq!(range_res.values, vec![(123, 2.0), (12, 1.0)]);
+
+    let sum: TsRange<u64, f64> = get_con()
+        .ts_revrange(
+            "test_ts_revrange",
+            12,
+            123,
+            None::<usize>,
+            Some(TsAggregationType::Sum(10000)),
+        )
+        .unwrap();
+    assert_eq!(sum.values, vec![(0, 3.0)]);
+
+    let res: TsRange<u64, f64> = get_con()
+        .ts_revrange("test_ts_revrange2", "-", "+", None::<usize>, None)
+        .unwrap();
+    assert_eq!(res.values, vec![]);
+}
+
+#[test]
 fn test_ts_mrange() {
     let _: () = get_con().del("test_ts_mrange").unwrap();
     let _: () = get_con().del("test_ts_mrange2").unwrap();
@@ -454,6 +504,65 @@ fn test_ts_mrange() {
     assert_eq!(
         res.values[0].labels,
         vec![("l".to_string(), "mrange".to_string())]
+    );
+
+    let res2: TsMrange<u64, f64> = get_con()
+        .ts_mrange(
+            "-",
+            "+",
+            None::<usize>,
+            None,
+            TsFilterOptions::default()
+                .equals("none", "existing")
+                .with_labels(true),
+        )
+        .unwrap();
+    assert!(res2.values.is_empty());
+}
+
+#[test]
+fn test_ts_mrevrange() {
+    let _: () = get_con().del("test_ts_mrevrange").unwrap();
+    let _: () = get_con().del("test_ts_mrevrange2").unwrap();
+    let opts: TsOptions = TsOptions::default().label("l", "mrevrange");
+    let _: () = get_con()
+        .ts_create("test_ts_mrevrange", opts.clone())
+        .unwrap();
+    let _: () = get_con()
+        .ts_create("test_ts_mrevrange2", opts.clone())
+        .unwrap();
+    let _: () = get_con()
+        .ts_madd(&[
+            ("test_ts_mrevrange", 12, 1.0),
+            ("test_ts_mrevrange", 123, 2.0),
+            ("test_ts_mrevrange", 1234, 3.0),
+            ("test_ts_mrevrange2", 21, 1.0),
+            ("test_ts_mrevrange2", 321, 2.0),
+            ("test_ts_mrevrange2", 4321, 3.0),
+        ])
+        .unwrap();
+
+    let res: TsMrange<u64, f64> = get_con()
+        .ts_mrevrange(
+            "-",
+            "+",
+            None::<usize>,
+            None,
+            TsFilterOptions::default()
+                .equals("l", "mrevrange")
+                .with_labels(true),
+        )
+        .unwrap();
+    assert_eq!(res.values.len(), 2);
+    assert_eq!(
+        res.values[1].values,
+        vec![(4321, 3.0), (321, 2.0), (21, 1.0)]
+    );
+    assert_eq!(res.values[0].key, "test_ts_mrevrange");
+    assert_eq!(res.values[1].key, "test_ts_mrevrange2");
+    assert_eq!(
+        res.values[0].labels,
+        vec![("l".to_string(), "mrevrange".to_string())]
     );
 
     let res2: TsMrange<u64, f64> = get_con()
