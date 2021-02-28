@@ -16,7 +16,7 @@ but should work with versions higher than that.
  ```ini
  [dependencies]
  redis = "0.20.0"
- redis_ts = "0.3.0"
+ redis_ts = "0.4.0"
  ```
 
  Or via git:
@@ -30,7 +30,7 @@ With async feature inherited from the [redis](https://docs.rs/redis) crate (eith
 ```ini
  [dependencies]
  redis = "0.20.0"
- redis_ts = { version = "0.3.0", features = ['tokio-comp'] }
+ redis_ts = { version = "0.4.0", features = ['tokio-comp'] }
 ``` 
  
  ## Synchronous usage
