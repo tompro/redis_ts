@@ -37,5 +37,5 @@ args = ["doc", "--all-features"]
 description = "Runs clippy"
 install_crate = "clippy"
 command = "cargo"
-args = ["clippy", "--", "-D warnings"]
+args = ["clippy", "--", "-D", "warnings"]
 
