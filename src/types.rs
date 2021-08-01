@@ -202,7 +202,7 @@ impl ToRedisArgs for TsOptions {
         if let Some(ref l) = self.labels {
             out.write_arg(b"LABELS");
             for arg in l {
-                out.write_arg(&arg);
+                out.write_arg(arg);
             }
         }
     }
@@ -614,7 +614,7 @@ impl<
                     values: match values[2] {
                         Value::Bulk(ref vs) => {
                             let items: Vec<TsValueReply<TS, V>> =
-                                FromRedisValue::from_redis_values(&vs)?;
+                                FromRedisValue::from_redis_values(vs)?;
                             items.iter().map(|i| (i.ts, i.value)).collect()
                         }
                         _ => vec![],
