@@ -97,6 +97,11 @@ fn test_ts_get_ts_info() {
 }
 
 #[test]
+fn test_ts_alter() {
+    let _: () = block_on(ts_alter("async_test_ts_alter_std"));
+}
+
+#[test]
 fn test_ts_range() {
     let _: () = block_on(ts_range("async_test_ts_range_std"));
 }
