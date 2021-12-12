@@ -40,6 +40,21 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         })
     }
 
+    /// Modifies an existing redis time series configuration.
+    fn ts_alter<'a, K: ToRedisArgs + Send + Sync + 'a, RV: FromRedisValue>(
+        &'a mut self,
+        key: K,
+        options: TsOptions,
+    ) -> RedisFuture<RV> {
+        Box::pin(async move {
+            cmd("TS.ALTER")
+                .arg(key)
+                .arg(options.uncompressed(false))
+                .query_async(self)
+                .await
+        })
+    }
+
     /// Adds a single time series value with a timestamp to an existing redis time series.
     fn ts_add<
         'a,

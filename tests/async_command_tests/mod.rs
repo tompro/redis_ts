@@ -309,6 +309,37 @@ pub async fn ts_get_ts_info(name: &str) {
     assert_eq!(info.labels, vec![("a".to_string(), "b".to_string())]);
 }
 
+pub async fn ts_alter(name: &str) {
+    let mut con = get_con().await;
+    let _: () = con.del(name).await.unwrap();
+    let _: () = con
+        .ts_create(
+            name,
+            TsOptions::default()
+                .label("a", "b")
+                .duplicate_policy(TsDuplicatePolicy::Block)
+                .chunk_size(4096 * 2),
+        )
+        .await
+        .unwrap();
+    let _: () = con.ts_add(name, "1234", 2.0).await.unwrap();
+    let info: TsInfo = con.ts_info(name).await.unwrap();
+    assert_eq!(info.chunk_count, 1);
+    assert_eq!(info.chunk_size, 4096 * 2);
+    assert_eq!(info.labels, vec![("a".to_string(), "b".to_string())]);
+
+    let _: () = con
+        .ts_alter(
+            name,
+            TsOptions::default().chunk_size(4096 * 4).label("c", "d"),
+        )
+        .await
+        .unwrap();
+    let info2: TsInfo = con.ts_info(name).await.unwrap();
+    assert_eq!(info2.chunk_size, 4096 * 4);
+    assert_eq!(info2.labels, vec![("c".to_string(), "d".to_string())]);
+}
+
 pub async fn ts_range(name: &str) {
     let name2 = &format!("{:}2", name);
     let mut con = prepare_ts(name).await;

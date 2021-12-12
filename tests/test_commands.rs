@@ -364,6 +364,34 @@ fn test_ts_get_ts_info() {
 }
 
 #[test]
+fn test_ts_alter() {
+    let _: () = get_con().del("test_ts_alter").unwrap();
+    let _: Value = get_con()
+        .ts_create(
+            "test_ts_alter",
+            default_settings()
+                .duplicate_policy(TsDuplicatePolicy::Last)
+                .chunk_size(4096 * 2),
+        )
+        .unwrap();
+    let _: () = get_con().ts_add("test_ts_alter", "1234", 2.0).unwrap();
+    let info: TsInfo = get_con().ts_info("test_ts_alter").unwrap();
+    assert_eq!(info.chunk_count, 1);
+    assert_eq!(info.chunk_size, 4096 * 2);
+    assert_eq!(info.labels, vec![("a".to_string(), "b".to_string())]);
+
+    let _: Value = get_con()
+        .ts_alter(
+            "test_ts_alter",
+            TsOptions::default().chunk_size(4096 * 4).label("c", "d"),
+        )
+        .unwrap();
+    let info2: TsInfo = get_con().ts_info("test_ts_alter").unwrap();
+    assert_eq!(info2.chunk_size, 4096 * 4);
+    assert_eq!(info2.labels, vec![("c".to_string(), "d".to_string())]);
+}
+
+#[test]
 fn test_ts_range() {
     let _: () = get_con().del("test_ts_range").unwrap();
     let _: () = get_con().del("test_ts_range2").unwrap();
