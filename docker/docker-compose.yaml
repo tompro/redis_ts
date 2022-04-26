@@ -1,6 +1,6 @@
 version: "3.3"
 services:
   redis: 
-    image: redislabs/redismod
+    image: docker.io/redislabs/redismod
     ports:
       - "6379:6379"
