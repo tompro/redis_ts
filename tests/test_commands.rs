@@ -137,6 +137,78 @@ fn test_ts_add_create() {
 }
 
 #[test]
+fn test_ts_add_create_overwrite_duplicate_policiy() {
+    let redists_options_block = TsOptions::default().duplicate_policy(TsDuplicatePolicy::Block);
+    let redists_options_last = TsOptions::default().duplicate_policy(TsDuplicatePolicy::Last);
+
+    // delete as we want to start clean
+    let _: () = get_con().del("test_ts_add_create_overwrite").unwrap();
+
+    // create with BLOCK
+    let ts: u64 = get_con()
+        .ts_add_create(
+            "test_ts_add_create_overwrite",
+            1234567890,
+            2.2,
+            redists_options_block.clone(),
+        )
+        .unwrap();
+    assert_eq!(ts, 1234567890);
+
+    // should be block
+    let info1 = get_con().ts_info("test_ts_add_create_overwrite").unwrap();
+    assert_eq!(info1.duplicate_policy.unwrap(), TsDuplicatePolicy::Block);
+
+    // update and try chnage to last should have no errors
+    let ts2: u64 = get_con()
+        .ts_add_create(
+            "test_ts_add_create_overwrite",
+            "*",
+            2.3,
+            redists_options_last.clone(),
+        )
+        .unwrap();
+    assert!(ts2 > ts);
+
+    // update should not have changed the BLOCK setting
+    let info2 = get_con().ts_info("test_ts_add_create_overwrite").unwrap();
+    assert_eq!(info2.duplicate_policy.unwrap(), TsDuplicatePolicy::Block);
+
+    // start fresh
+    let _: () = get_con().del("test_ts_add_create_overwrite").unwrap();
+
+    // create with LAST
+    let ts: u64 = get_con()
+        .ts_add_create(
+            "test_ts_add_create_overwrite",
+            1234567890,
+            2.2,
+            redists_options_last.clone(),
+        )
+        .unwrap();
+    assert_eq!(ts, 1234567890);
+
+    // should be LAST
+    let info1 = get_con().ts_info("test_ts_add_create_overwrite").unwrap();
+    assert_eq!(info1.duplicate_policy.unwrap(), TsDuplicatePolicy::Last);
+    //
+    // update and try change to block should have no errors
+    let ts2: u64 = get_con()
+        .ts_add_create(
+            "test_ts_add_create_overwrite",
+            "*",
+            2.3,
+            redists_options_block.clone(),
+        )
+        .unwrap();
+    assert!(ts2 > ts);
+
+    // update should not have changed the LAST setting
+    let info2 = get_con().ts_info("test_ts_add_create_overwrite").unwrap();
+    assert_eq!(info2.duplicate_policy.unwrap(), TsDuplicatePolicy::Last);
+}
+
+#[test]
 fn test_ts_madd() {
     let _: () = get_con().del("test_ts_madd").unwrap();
     let _: () = get_con().del("test_ts2_madd").unwrap();
