@@ -1,6 +1,6 @@
 [package]
 name = "redis_ts"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["protom <office@protom.eu>"]
 keywords = ["redis", "database"]
 description = "API for Redis time series types."
@@ -13,7 +13,7 @@ edition = "2018"
 exclude = ["docker"]
 
 [dependencies]
-redis = { version = "0.21.5", optional = true }
+redis = { version = "0.22.1", optional = true }
 
 [features]
 default = ['redis']
@@ -21,9 +21,9 @@ tokio-comp = ['redis/tokio-comp']
 async-std-comp = ['redis/async-std-comp']
 
 [dev-dependencies]
-tokio = { version = "1.17.0", features = ["rt"] }
-futures = "0.3.21"
-async-std = "1.11.0"
+tokio = { version = "1", features = ["rt"] }
+futures = "0.3.5"
+async-std = { version = "1.8.0", features = ["tokio1"] }
 
 [[test]]
 name = "test_async_std_commands"
