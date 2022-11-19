@@ -247,11 +247,11 @@
 //! )?;
 //!
 //! let range_raw:TsRange<u64,f64> = con.ts_range(
-//!     "my_engine", 1234, 5678, None::<usize>, None
+//!     "my_engine", 1234, 5678, None::<usize>, None::<TsAggregationType>
 //! )?;
 //!
 //! let rev_range_raw:TsRange<u64,f64> = con.ts_revrange(
-//!     "my_engine", 1234, 5678, None::<usize>, None
+//!     "my_engine", 1234, 5678, None::<usize>, None::<TsAggregationType>
 //! )?;
 //! # Ok(()) }
 //! ```
@@ -271,12 +271,12 @@
 //! )?;
 //!
 //! let range_raw:TsMrange<u64,f64> = con.ts_mrange(
-//!     1234, 5678, None::<usize>, None,
+//!     1234, 5678, None::<usize>, None::<TsAggregationType>,
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;
 //!
 //! let rev_range_raw:TsMrange<u64,f64> = con.ts_mrevrange(
-//!     1234, 5678, None::<usize>, None,
+//!     1234, 5678, None::<usize>, None::<TsAggregationType>,
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;
 //! # Ok(()) }
@@ -344,8 +344,8 @@ pub use crate::async_commands::AsyncTsCommands;
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
-    TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
-    TsRange,
+    TsAggregationType, TsAggregationOptions, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
+    TsRange, TsBucketTimestamp
 };
 
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]

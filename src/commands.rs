@@ -203,6 +203,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         command: &str,
@@ -210,7 +211,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
     ) -> RedisResult<TsRange<TS, V>> {
         let mut c = cmd(command);
         c.arg(key).arg(from_timestamp).arg(to_timestamp);
@@ -228,13 +229,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         key: K,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
     ) -> RedisResult<TsRange<TS, V>> {
         self.range(
             "TS.RANGE",
@@ -254,13 +256,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         key: K,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
     ) -> RedisResult<TsRange<TS, V>> {
         self.range(
             "TS.REVRANGE",
@@ -279,13 +282,14 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         command: &str,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMrange<TS, V>> {
         let mut c = cmd(command);
@@ -304,12 +308,13 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMrange<TS, V>> {
         self.mrange(
@@ -329,12 +334,13 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregateable + ToRedisArgs
     >(
         &mut self,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMrange<TS, V>> {
         self.mrange(

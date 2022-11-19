@@ -48,9 +48,89 @@ impl ToRedisArgs for TsAggregationType {
     }
 }
 
+// since RedisTimeSeries v1.8, controls how bucket timestamps are reported.
+// low - the bucket's start time (default)
+// high - the bucket's end time
+// mid - the bucket's mid time (rounded down if not an integer)
+pub enum TsBucketTimestamp {
+    Low,
+    High,
+    Mid,
+}
+
+impl ToRedisArgs for TsBucketTimestamp {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg(b"BUCKETTIMESTAMP");
+        let bt = match *self {
+            TsBucketTimestamp::Low => "-",  // alternatively "low"
+            TsBucketTimestamp::High => "+", // alternatively "high"
+            TsBucketTimestamp::Mid => "~",  // alternatively "mid"
+        };
+
+        out.write_arg(bt.as_bytes());
+    }
+}
+// Different options for aggregation in addition to the aggregator type and bucket duration,
+// (since RedisTimeSeries v1.8) bucket_timestamp - controls how bucket timestamps are reported, see above
+// (since RedisTimeSeries v1.8) empty - a flag, which, when specified, reports aggregations also for empty buckets
+pub struct TsAggregationOptions {
+    aggregator: TsAggregationType,
+    bucket_timestamp: Option<TsBucketTimestamp>,
+    empty: bool,
+}
+
+impl TsAggregationOptions {
+    pub fn new(aggregator: TsAggregationType) -> TsAggregationOptions {
+        TsAggregationOptions {
+            aggregator: aggregator,
+            bucket_timestamp: None,
+            empty: false,
+        }
+    }
+
+    /// Sets empty aggregation flag
+    pub fn empty(mut self, value: bool) -> Self {
+        self.empty = value;
+        self
+    }
+
+    /// Sets aggregation bucket timestamp type
+    pub fn bucket_timestamp(mut self, value: Option<TsBucketTimestamp>) -> Self {
+        self.bucket_timestamp = value;
+        self
+    }
+}
+
+impl ToRedisArgs for TsAggregationOptions {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        self.aggregator.write_redis_args(out);
+
+        if let Some(bt) = &self.bucket_timestamp {
+            bt.write_redis_args(out);
+        }
+
+        if self.empty {
+            out.write_arg(b"EMPTY");
+        }
+    }
+}
+
+// a trait to allow both TsAggregationType and TsAggregationOptions to be passed as aggregation options
+pub trait Aggregateable {}
+
+impl Aggregateable for TsAggregationType {}
+impl Aggregateable for TsAggregationOptions {}
+
+
 /// Different options for handling inserts of duplicate values. Block
 /// is the behaviour redis time series was using before preventing all
-/// inserts of values older or equal to latest value in series. Fist
+/// inserts of values older or equal to latest value in series. First
 /// will simply ignore the new value (as opposed to returning an error),
 /// Last will use the new value, Min the lower and Max the higher value.
 #[derive(PartialEq, Eq, Clone, Debug)]
