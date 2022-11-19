@@ -203,7 +203,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         command: &str,
@@ -229,7 +229,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         key: K,
@@ -256,7 +256,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         key: K,
@@ -282,7 +282,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         command: &str,
@@ -308,7 +308,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         from_timestamp: FTS,
@@ -334,7 +334,7 @@ pub trait TsCommands: ConnectionLike + Sized {
         C: ToRedisArgs,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
-        AGG: Aggregateable + ToRedisArgs
+        AGG: Aggregatable + ToRedisArgs
     >(
         &mut self,
         from_timestamp: FTS,

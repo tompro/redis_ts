@@ -122,10 +122,10 @@ impl ToRedisArgs for TsAggregationOptions {
 }
 
 // a trait to allow both TsAggregationType and TsAggregationOptions to be passed as aggregation options
-pub trait Aggregateable {}
+pub trait Aggregatable {}
 
-impl Aggregateable for TsAggregationType {}
-impl Aggregateable for TsAggregationOptions {}
+impl Aggregatable for TsAggregationType {}
+impl Aggregatable for TsAggregationOptions {}
 
 
 /// Different options for handling inserts of duplicate values. Block
