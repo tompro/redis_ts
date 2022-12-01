@@ -330,6 +330,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregatable + ToRedisArgs + Send + 'a,
     >(
         &'a mut self,
         command: &str,
@@ -337,7 +338,8 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG
+        >,
     ) -> RedisFuture<TsRange<TS, V>> {
         let mut c = cmd(command);
         c.arg(key).arg(from_timestamp).arg(to_timestamp);
@@ -356,13 +358,14 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregatable + ToRedisArgs + Send + 'a,
     >(
         &'a mut self,
         key: K,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
     ) -> RedisFuture<TsRange<TS, V>> {
         self.range(
             "TS.RANGE",
@@ -383,13 +386,14 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::marker::Copy + FromRedisValue,
         V: std::marker::Copy + FromRedisValue,
+        AGG: Aggregatable + ToRedisArgs + Send + 'a,
     >(
         &'a mut self,
         key: K,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
     ) -> RedisFuture<TsRange<TS, V>> {
         self.range(
             "TS.REVRANGE",
@@ -409,13 +413,14 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregatable + ToRedisArgs + Send,
     >(
         &mut self,
         command: &str,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisFuture<TsMrange<TS, V>> {
         let mut c = cmd(command);
@@ -435,12 +440,13 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregatable + ToRedisArgs + Send,
     >(
         &mut self,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisFuture<TsMrange<TS, V>> {
         self.mrange(
@@ -461,12 +467,13 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
         C: ToRedisArgs + Send + Sync + 'a,
         TS: std::default::Default + FromRedisValue + Copy,
         V: std::default::Default + FromRedisValue + Copy,
+        AGG: Aggregatable + ToRedisArgs + Send,
     >(
         &mut self,
         from_timestamp: FTS,
         to_timestamp: TTS,
         count: Option<C>,
-        aggregation_type: Option<TsAggregationType>,
+        aggregation_type: Option<AGG>,
         filter_options: TsFilterOptions,
     ) -> RedisFuture<TsMrange<TS, V>> {
         self.mrange(
