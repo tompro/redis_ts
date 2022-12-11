@@ -2,6 +2,7 @@ use redis::{
     from_redis_value, FromRedisValue, RedisError, RedisResult, RedisWrite, ToRedisArgs, Value,
 };
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::str;
 
 /// Allows you to specify a redis time series aggreation with a time
@@ -20,6 +21,7 @@ pub enum TsAggregationType {
     StdS(u64),
     VarP(u64),
     VarS(u64),
+    Twa(u64),
 }
 
 impl ToRedisArgs for TsAggregationType {
@@ -40,11 +42,215 @@ impl ToRedisArgs for TsAggregationType {
             TsAggregationType::StdS(v) => ("std.s", v),
             TsAggregationType::VarP(v) => ("var.p", v),
             TsAggregationType::VarS(v) => ("var.s", v),
+            TsAggregationType::Twa(v) => ("twa", v),
         };
 
         out.write_arg(b"AGGREGATION");
         out.write_arg(t.as_bytes());
         val.write_redis_args(out);
+    }
+}
+
+///A time bucket alignment control for AGGREGATION. It controls the time bucket
+/// timestamps by changing the reference timestamp on which a bucket is defined.
+/// - Start: The reference timestamp will be the query start interval time.
+/// - End: The reference timestamp will be the query end interval time.
+/// - Ts(time): A specific timestamp: align the reference timestamp to a specific time.
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum TsAlign {
+    Start,
+    End,
+    Ts(u64),
+}
+
+impl ToRedisArgs for TsAlign {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg(b"ALIGN");
+        match self {
+            TsAlign::Start => out.write_arg(b"-"),
+            TsAlign::End => out.write_arg(b"+"),
+            TsAlign::Ts(v) => v.write_redis_args(out),
+        }
+    }
+}
+
+/// Bucket timestamp controls how bucket timestamps are reported.
+/// - Low: the bucket's start time (default).
+/// - High: the bucket's end time.
+/// - Mid: the bucket's mid time (rounded down if not an integer).
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum TsBucketTimestamp {
+    Low,
+    High,
+    Mid,
+}
+
+impl ToRedisArgs for TsBucketTimestamp {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg(b"BUCKETTIMESTAMP");
+        match self {
+            TsBucketTimestamp::Low => out.write_arg(b"-"),
+            TsBucketTimestamp::High => out.write_arg(b"+"),
+            TsBucketTimestamp::Mid => out.write_arg(b"~"),
+        }
+    }
+}
+
+/// Let's you build a ts range query with all options via a builder pattern:
+///
+/// ```rust
+/// use redis_ts::{TsAggregationType, TsBucketTimestamp, TsRangeQuery};
+/// let query = TsRangeQuery::default()
+///     .from(1234)
+///     .to(5678)
+///     .latest(true)
+///     .filter_by_value(1.0, 5.0)
+///     .aggregation_type(TsAggregationType::Avg(5000))
+///     .bucket_timestamp(TsBucketTimestamp::High)
+///     .empty(true);
+/// ```
+///
+#[derive(Default, Debug, Clone)]
+pub struct TsRangeQuery {
+    from: Option<u64>,
+    to: Option<u64>,
+    latest: bool,
+    filter_by_ts: Vec<u64>,
+    filter_by_value: Option<(f64, f64)>,
+    count: Option<u64>,
+    align: Option<TsAlign>,
+    aggregation_type: Option<TsAggregationType>,
+    bucket_timestamp: Option<TsBucketTimestamp>,
+    empty: bool,
+}
+
+impl TsRangeQuery {
+    /// Start timestamp of the series to query. Defaults to '-' (earliest sample)
+    /// if left empty.
+    pub fn from(mut self, from: u64) -> Self {
+        self.from = Some(from);
+        self
+    }
+
+    /// End timestamp of the series to query. Defaults to '+' (latest sample)
+    /// if left empty.
+    pub fn to(mut self, to: u64) -> Self {
+        self.to = Some(to);
+        self
+    }
+
+    /// Will enable the LATEST flag on the query.
+    pub fn latest(mut self, latest: bool) -> Self {
+        self.latest = latest;
+        self
+    }
+
+    /// Will enable the FILTER_BY_TS option with given timestamps. Will only
+    /// be added if the given Vec contains any ts values.
+    pub fn filter_by_ts(mut self, ts: Vec<u64>) -> Self {
+        self.filter_by_ts = ts;
+        self
+    }
+
+    /// Will enable the FILTER_BY_VALUE option with given min and max values.
+    pub fn filter_by_value(mut self, min: f64, max: f64) -> Self {
+        self.filter_by_value = Some((min, max));
+        self
+    }
+
+    /// Determines the max amount of returned samples.
+    pub fn count(mut self, count: u64) -> Self {
+        self.count = Some(count);
+        self
+    }
+
+    /// Controls the aggregation alignment. Will only be added if the query actually
+    /// contains aggregation params.
+    pub fn align(mut self, align: TsAlign) -> Self {
+        self.align = Some(align);
+        self
+    }
+
+    /// The type of aggregation to be performed on the series.
+    pub fn aggregation_type(mut self, aggregation_type: TsAggregationType) -> Self {
+        self.aggregation_type = Some(aggregation_type);
+        self
+    }
+
+    /// Controls reporting of aggregation bucket timestamps. Will only be added if the
+    /// query actually contains aggregation params.
+    pub fn bucket_timestamp(mut self, bucket_timestamp: TsBucketTimestamp) -> Self {
+        self.bucket_timestamp = Some(bucket_timestamp);
+        self
+    }
+
+    /// Enables the EMPTY flag on the query.
+    pub fn empty(mut self, empty: bool) -> Self {
+        self.empty = empty;
+        self
+    }
+}
+
+impl ToRedisArgs for TsRangeQuery {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        if let Some(from) = self.from {
+            from.write_redis_args(out);
+        } else {
+            out.write_arg(b"-");
+        }
+
+        if let Some(to) = self.to {
+            to.write_redis_args(out);
+        } else {
+            out.write_arg(b"+");
+        }
+
+        if self.latest {
+            out.write_arg(b"LATEST");
+        }
+
+        if !self.filter_by_ts.is_empty() {
+            out.write_arg(b"FILTER_BY_TS");
+            for ts in self.filter_by_ts.iter() {
+                ts.write_redis_args(out);
+            }
+        }
+
+        if let Some((min, max)) = self.filter_by_value {
+            out.write_arg(b"FILTER_BY_VALUE");
+            min.write_redis_args(out);
+            max.write_redis_args(out);
+        }
+
+        if let Some(count) = self.count {
+            out.write_arg(b"COUNT");
+            count.write_redis_args(out);
+        }
+
+        if let Some(ref agg) = self.aggregation_type {
+            if let Some(ref align) = self.align {
+                align.write_redis_args(out);
+            }
+
+            agg.write_redis_args(out);
+
+            if let Some(ref bkt_ts) = self.bucket_timestamp {
+                bkt_ts.write_redis_args(out);
+            }
+
+            if self.empty {
+                out.write_arg(b"EMPTY")
+            }
+        }
     }
 }
 
@@ -241,7 +447,7 @@ impl TsFilterOptions {
     }
 
     /// Select time series where the given label contains the the given value.
-    pub fn equals<L: std::fmt::Display + ToRedisArgs, V: std::fmt::Display + ToRedisArgs>(
+    pub fn equals<L: Display + ToRedisArgs, V: Display + ToRedisArgs>(
         mut self,
         name: L,
         value: V,
@@ -255,35 +461,35 @@ impl TsFilterOptions {
     }
 
     /// Select time series where given label does not contain the given value.
-    pub fn not_equals<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+    pub fn not_equals<L: Display + ToRedisArgs, V: Display + ToRedisArgs>(
         mut self,
         name: L,
         value: V,
     ) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{:?}", name),
-            value: format!("{:?}", value),
+            name: format!("{}", name),
+            value: format!("{}", value),
             compare: TsCompare::NotEq,
         });
         self
     }
 
     /// Select time series where given label contains any of the given values.
-    pub fn in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+    pub fn in_set<L: Display + ToRedisArgs, V: Display + ToRedisArgs>(
         mut self,
         name: L,
         values: Vec<V>,
     ) -> Self {
         let set = format!(
-            "({:?})",
+            "({})",
             values
                 .iter()
-                .map(|v| { format!("{:?}", v) })
+                .map(|v| { format!("{}", v) })
                 .collect::<Vec<String>>()
                 .join(",")
         );
         self.filters.push(TsFilter {
-            name: format!("{:?}", name),
+            name: format!("{}", name),
             value: set,
             compare: TsCompare::Eq,
         });
@@ -291,21 +497,21 @@ impl TsFilterOptions {
     }
 
     /// Select time series where given label does not contain any of the given values.
-    pub fn not_in_set<L: std::fmt::Debug + ToRedisArgs, V: std::fmt::Debug + ToRedisArgs>(
+    pub fn not_in_set<L: Display + ToRedisArgs, V: Display + ToRedisArgs>(
         mut self,
         name: L,
         values: Vec<V>,
     ) -> Self {
         let set = format!(
-            "({:?})",
+            "({})",
             values
                 .iter()
-                .map(|v| { format!("{:?}", v) })
+                .map(|v| { format!("{}", v) })
                 .collect::<Vec<String>>()
                 .join(",")
         );
         self.filters.push(TsFilter {
-            name: format!("{:?}", name),
+            name: format!("{}", name),
             value: set,
             compare: TsCompare::NotEq,
         });
@@ -313,9 +519,9 @@ impl TsFilterOptions {
     }
 
     /// Select all time series that have the given label.
-    pub fn has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name: L) -> Self {
+    pub fn has_label<L: Display + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{:?}", name),
+            name: format!("{}", name),
             value: "".to_string(),
             compare: TsCompare::NotEq,
         });
@@ -323,9 +529,9 @@ impl TsFilterOptions {
     }
 
     /// Select all time series that do not have the given label.
-    pub fn not_has_label<L: std::fmt::Debug + ToRedisArgs>(mut self, name: L) -> Self {
+    pub fn not_has_label<L: Display + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{:?}", name),
+            name: format!("{}", name),
             value: "".to_string(),
             compare: TsCompare::Eq,
         });
@@ -469,9 +675,7 @@ pub struct TsMget<TS: FromRedisValue, V: FromRedisValue> {
     pub values: Vec<TsMgetEntry<TS, V>>,
 }
 
-impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + FromRedisValue>
-    FromRedisValue for TsMget<TS, V>
-{
+impl<TS: Default + FromRedisValue, V: Default + FromRedisValue> FromRedisValue for TsMget<TS, V> {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let res = match *v {
             Value::Bulk(ref values) => TsMget {
@@ -492,8 +696,8 @@ pub struct TsMgetEntry<TS: FromRedisValue, V: FromRedisValue> {
     pub value: Option<(TS, V)>,
 }
 
-impl<TS: std::default::Default + FromRedisValue, V: std::default::Default + FromRedisValue>
-    FromRedisValue for TsMgetEntry<TS, V>
+impl<TS: Default + FromRedisValue, V: Default + FromRedisValue> FromRedisValue
+    for TsMgetEntry<TS, V>
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {
@@ -563,10 +767,8 @@ pub struct TsMrange<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
     pub values: Vec<TsMrangeEntry<TS, V>>,
 }
 
-impl<
-        TS: std::default::Default + FromRedisValue + Copy,
-        V: std::default::Default + FromRedisValue + Copy,
-    > FromRedisValue for TsMrange<TS, V>
+impl<TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy> FromRedisValue
+    for TsMrange<TS, V>
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let res = match *v {
@@ -588,10 +790,8 @@ pub struct TsMrangeEntry<TS: FromRedisValue + Copy, V: FromRedisValue + Copy> {
     pub values: Vec<(TS, V)>,
 }
 
-impl<
-        TS: std::default::Default + FromRedisValue + Copy,
-        V: std::default::Default + FromRedisValue + Copy,
-    > FromRedisValue for TsMrangeEntry<TS, V>
+impl<TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy> FromRedisValue
+    for TsMrangeEntry<TS, V>
 {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match *v {

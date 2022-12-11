@@ -201,8 +201,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::marker::Copy + FromRedisValue,
-        V: std::marker::Copy + FromRedisValue,
+        TS: Copy + FromRedisValue,
+        V: Copy + FromRedisValue,
     >(
         &mut self,
         command: &str,
@@ -226,8 +226,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::marker::Copy + FromRedisValue,
-        V: std::marker::Copy + FromRedisValue,
+        TS: Copy + FromRedisValue,
+        V: Copy + FromRedisValue,
     >(
         &mut self,
         key: K,
@@ -252,8 +252,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::marker::Copy + FromRedisValue,
-        V: std::marker::Copy + FromRedisValue,
+        TS: Copy + FromRedisValue,
+        V: Copy + FromRedisValue,
     >(
         &mut self,
         key: K,
@@ -277,8 +277,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::default::Default + FromRedisValue + Copy,
-        V: std::default::Default + FromRedisValue + Copy,
+        TS: Default + FromRedisValue + Copy,
+        V: Default + FromRedisValue + Copy,
     >(
         &mut self,
         command: &str,
@@ -302,8 +302,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::default::Default + FromRedisValue + Copy,
-        V: std::default::Default + FromRedisValue + Copy,
+        TS: Default + FromRedisValue + Copy,
+        V: Default + FromRedisValue + Copy,
     >(
         &mut self,
         from_timestamp: FTS,
@@ -327,8 +327,8 @@ pub trait TsCommands: ConnectionLike + Sized {
         FTS: ToRedisArgs,
         TTS: ToRedisArgs,
         C: ToRedisArgs,
-        TS: std::default::Default + FromRedisValue + Copy,
-        V: std::default::Default + FromRedisValue + Copy,
+        TS: Default + FromRedisValue + Copy,
+        V: Default + FromRedisValue + Copy,
     >(
         &mut self,
         from_timestamp: FTS,
@@ -356,10 +356,7 @@ pub trait TsCommands: ConnectionLike + Sized {
     }
 
     /// Returns the latest (current) value from multiple redis time series.
-    fn ts_mget<
-        TS: std::default::Default + FromRedisValue,
-        V: std::default::Default + FromRedisValue,
-    >(
+    fn ts_mget<TS: Default + FromRedisValue, V: Default + FromRedisValue>(
         &mut self,
         filter_options: TsFilterOptions,
     ) -> RedisResult<TsMget<TS, V>> {

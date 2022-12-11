@@ -35,7 +35,7 @@
 //! redis_ts::TsCommands into the scope. All redis time series
 //! commands will then be available on your redis connection.
 //!
-//!  
+//!
 //! ```rust,no_run
 //! # fn run() -> redis::RedisResult<()> {
 //! use redis::Commands;
@@ -338,14 +338,16 @@
 //! # Ok(()) }
 //! ```
 //!
+extern crate core;
+
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
 pub use crate::async_commands::AsyncTsCommands;
 
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
-    TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
-    TsRange,
+    TsAggregationType, TsAlign, TsBucketTimestamp, TsDuplicatePolicy, TsFilterOptions, TsInfo,
+    TsMget, TsMrange, TsOptions, TsRange, TsRangeQuery,
 };
 
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
