@@ -4,7 +4,7 @@ extern crate redis_ts;
 use redis::{Commands, Connection, Value};
 use redis_ts::{
     TsAggregationType, TsCommands, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange,
-    TsOptions, TsRange,
+    TsOptions, TsRange, TsRangeQuery,
 };
 
 use std::thread;
@@ -481,35 +481,44 @@ fn test_ts_range() {
         ])
         .unwrap();
 
-    let res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", "-", "+", None::<usize>, None)
-        .unwrap();
+    let query = TsRangeQuery::default();
+
+    let res: TsRange<u64, f64> = get_con().ts_range("test_ts_range", query.clone()).unwrap();
     assert_eq!(res.values, vec![(12, 1.0), (123, 2.0), (1234, 3.0)]);
 
+    let ts_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range("test_ts_range", query.clone().filter_by_ts(vec![123, 1234]))
+        .unwrap();
+    assert_eq!(ts_filtered_res.values, vec![(123, 2.0), (1234, 3.0)]);
+
+    let value_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range("test_ts_range", query.clone().filter_by_value(1.5, 2.5))
+        .unwrap();
+    assert_eq!(value_filtered_res.values, vec![(123, 2.0)]);
+
     let one_res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", "-", "+", Some(1), None)
+        .ts_range("test_ts_range", query.clone().count(1))
         .unwrap();
     assert_eq!(one_res.values, vec![(12, 1.0)]);
 
+    let range_query = query.clone().from(12).to(123);
+
     let range_res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", 12, 123, None::<usize>, None)
+        .ts_range("test_ts_range", range_query.clone())
         .unwrap();
     assert_eq!(range_res.values, vec![(12, 1.0), (123, 2.0)]);
 
     let sum: TsRange<u64, f64> = get_con()
         .ts_range(
             "test_ts_range",
-            12,
-            123,
-            None::<usize>,
-            Some(TsAggregationType::Sum(10000)),
+            range_query
+                .clone()
+                .aggregation_type(TsAggregationType::Sum(10000)),
         )
         .unwrap();
     assert_eq!(sum.values, vec![(0, 3.0)]);
 
-    let res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range2", "-", "+", None::<usize>, None)
-        .unwrap();
+    let res: TsRange<u64, f64> = get_con().ts_range("test_ts_range2", query.clone()).unwrap();
     assert_eq!(res.values, vec![]);
 }
 
@@ -532,33 +541,49 @@ fn test_ts_revrange() {
         .unwrap();
 
     let res: TsRange<u64, f64> = get_con()
-        .ts_revrange("test_ts_revrange", "-", "+", None::<usize>, None)
+        .ts_revrange("test_ts_revrange", TsRangeQuery::default())
         .unwrap();
     assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
 
+    let ts_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range(
+            "test_ts_range",
+            TsRangeQuery::default().filter_by_ts(vec![123, 1234]),
+        )
+        .unwrap();
+    assert_eq!(ts_filtered_res.values, vec![(123, 2.0), (1234, 3.0)]);
+
+    let value_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range(
+            "test_ts_range",
+            TsRangeQuery::default().filter_by_value(1.5, 2.5),
+        )
+        .unwrap();
+    assert_eq!(value_filtered_res.values, vec![(123, 2.0)]);
+
     let one_res: TsRange<u64, f64> = get_con()
-        .ts_revrange("test_ts_revrange", "-", "+", Some(1), None)
+        .ts_revrange("test_ts_revrange", TsRangeQuery::default().count(1))
         .unwrap();
     assert_eq!(one_res.values, vec![(1234, 3.0)]);
 
     let range_res: TsRange<u64, f64> = get_con()
-        .ts_revrange("test_ts_revrange", 12, 123, None::<usize>, None)
+        .ts_revrange("test_ts_revrange", TsRangeQuery::default().from(12).to(123))
         .unwrap();
     assert_eq!(range_res.values, vec![(123, 2.0), (12, 1.0)]);
 
     let sum: TsRange<u64, f64> = get_con()
         .ts_revrange(
             "test_ts_revrange",
-            12,
-            123,
-            None::<usize>,
-            Some(TsAggregationType::Sum(10000)),
+            TsRangeQuery::default()
+                .from(12)
+                .to(123)
+                .aggregation_type(TsAggregationType::Sum(10000)),
         )
         .unwrap();
     assert_eq!(sum.values, vec![(0, 3.0)]);
 
     let res: TsRange<u64, f64> = get_con()
-        .ts_revrange("test_ts_revrange2", "-", "+", None::<usize>, None)
+        .ts_revrange("test_ts_revrange2", TsRangeQuery::default())
         .unwrap();
     assert_eq!(res.values, vec![]);
 }
@@ -585,10 +610,7 @@ fn test_ts_mrange() {
 
     let res: TsMrange<u64, f64> = get_con()
         .ts_mrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            TsRangeQuery::default(),
             TsFilterOptions::default()
                 .equals("l", "mrange")
                 .with_labels(true),
@@ -608,10 +630,7 @@ fn test_ts_mrange() {
 
     let res2: TsMrange<u64, f64> = get_con()
         .ts_mrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            TsRangeQuery::default(),
             TsFilterOptions::default()
                 .equals("none", "existing")
                 .with_labels(true),
@@ -644,10 +663,7 @@ fn test_ts_mrevrange() {
 
     let res: TsMrange<u64, f64> = get_con()
         .ts_mrevrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            TsRangeQuery::default(),
             TsFilterOptions::default()
                 .equals("l", "mrevrange")
                 .with_labels(true),
@@ -667,10 +683,7 @@ fn test_ts_mrevrange() {
 
     let res2: TsMrange<u64, f64> = get_con()
         .ts_mrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            TsRangeQuery::default(),
             TsFilterOptions::default()
                 .equals("none", "existing")
                 .with_labels(true),

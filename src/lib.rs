@@ -5,13 +5,13 @@
 //! series commands are available as synchronous and asynchronous versions.
 //!
 //! The crate is called `redis_ts` and you can depend on it via cargo. You will
-//! also need redis in your dependencies. It has been tested agains redis 0.22.1
+//! also need redis in your dependencies. It has been tested against redis 0.22.1
 //! but should work with versions higher than that.
 //!
 //! ```ini
 //! [dependencies]
 //! redis = "0.22.1"
-//! redis_ts = "0.4.2"
+//! redis_ts = "0.5.0"
 //! ```
 //!
 //! Or via git:
@@ -26,7 +26,7 @@
 //! ```ini
 //! [dependencies]
 //! redis = "0.22.1"
-//! redis_ts = { version = "0.4.2", features = ['tokio-comp'] }
+//! redis_ts = { version = "0.5.0", features = ['tokio-comp'] }
 //! ```
 //!
 //! # Synchronous usage
@@ -35,7 +35,7 @@
 //! redis_ts::TsCommands into the scope. All redis time series
 //! commands will then be available on your redis connection.
 //!
-//!  
+//!
 //! ```rust,no_run
 //! # fn run() -> redis::RedisResult<()> {
 //! use redis::Commands;
@@ -237,21 +237,26 @@
 //! Query for a range of time series data.
 //!
 //! ```rust,no_run
-//! # fn run() -> redis::RedisResult<()> {
+//! fn run() -> redis::RedisResult<()> {
 //! # use redis::Commands;
-//! # use redis_ts::{TsCommands, TsRange, TsAggregationType};
+//! # use redis_ts::{TsCommands, TsRange, TsAggregationType, TsRangeQuery};
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let first_three_avg:TsRange<u64,f64> = con.ts_range(
-//!     "my_engine", "-", "+", Some(3), Some(TsAggregationType::Avg(5000))
+//!     "my_engine",
+//!     TsRangeQuery::default()
+//!         .count(3)
+//!         .aggregation_type(TsAggregationType::Avg(5000))
 //! )?;
 //!
 //! let range_raw:TsRange<u64,f64> = con.ts_range(
-//!     "my_engine", 1234, 5678, None::<usize>, None
+//!     "my_engine",
+//!     TsRangeQuery::default().from(1234).to(5678)
 //! )?;
 //!
 //! let rev_range_raw:TsRange<u64,f64> = con.ts_revrange(
-//!     "my_engine", 1234, 5678, None::<usize>, None
+//!     "my_engine",
+//!     TsRangeQuery::default().from(1234).to(5678)
 //! )?;
 //! # Ok(()) }
 //! ```
@@ -262,21 +267,21 @@
 //! ```rust,no_run
 //! # fn run() -> redis::RedisResult<()> {
 //! # use redis::Commands;
-//! # use redis_ts::{TsCommands, TsMrange, TsAggregationType, TsFilterOptions};
+//! # use redis_ts::{TsCommands, TsMrange, TsAggregationType, TsFilterOptions, TsRangeQuery};
 //! # let client = redis::Client::open("redis://127.0.0.1/")?;
 //! # let mut con = client.get_connection()?;
 //! let first_three_avg:TsMrange<u64,f64> = con.ts_mrange(
-//!     "-", "+", Some(3), Some(TsAggregationType::Avg(5000)),
+//!     TsRangeQuery::default().count(3).aggregation_type(TsAggregationType::Avg(5000)),
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;
 //!
 //! let range_raw:TsMrange<u64,f64> = con.ts_mrange(
-//!     1234, 5678, None::<usize>, None,
+//!     TsRangeQuery::default().from(1234).to(5678),
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;
 //!
 //! let rev_range_raw:TsMrange<u64,f64> = con.ts_mrevrange(
-//!     1234, 5678, None::<usize>, None,
+//!     TsRangeQuery::default().from(1234).to(5678),
 //!     TsFilterOptions::default().equals("sensor", "temperature")
 //! )?;
 //! # Ok(()) }
@@ -338,14 +343,16 @@
 //! # Ok(()) }
 //! ```
 //!
+extern crate core;
+
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
 pub use crate::async_commands::AsyncTsCommands;
 
 pub use crate::commands::TsCommands;
 
 pub use crate::types::{
-    TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
-    TsRange,
+    TsAggregationType, TsAlign, TsBucketTimestamp, TsDuplicatePolicy, TsFilterOptions, TsInfo,
+    TsMget, TsMrange, TsOptions, TsRange, TsRangeQuery,
 };
 
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
