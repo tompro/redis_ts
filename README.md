@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/badge/crates.io-v0.5.0-orange)](https://crates.io/crates/redis_ts)
 ![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
 
-Versions >= 0.5 contain a breaking change in the argument list of range queries. With some recent additions in the 
+Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
 Redis time series module the number of arguments for ts_range, ts_revrange, ts_mrange and ts_mrevrange have simply 
 grown to long. All existing and the new arguments are now replaced by a single `TsRangeQuery` struct for which there
 is also a builder available.
