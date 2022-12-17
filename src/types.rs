@@ -2,7 +2,7 @@ use redis::{
     from_redis_value, FromRedisValue, RedisError, RedisResult, RedisWrite, ToRedisArgs, Value,
 };
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::str;
 
 /// Allows you to specify a redis time series aggreation with a time
@@ -81,7 +81,7 @@ impl ToRedisArgs for TsAlign {
 /// - Low: the bucket's start time (default).
 /// - High: the bucket's end time.
 /// - Mid: the bucket's mid time (rounded down if not an integer).
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Copy)]
 pub enum TsBucketTimestamp {
     Low,
     High,
@@ -102,6 +102,100 @@ impl ToRedisArgs for TsBucketTimestamp {
     }
 }
 
+#[derive(Clone, Debug, Copy)]
+pub enum Integer {
+    Usize(usize),
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    Isize(isize),
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+}
+
+impl ToRedisArgs for Integer {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        match self {
+            Integer::Usize(v) => v.write_redis_args(out),
+            Integer::U8(v) => v.write_redis_args(out),
+            Integer::U16(v) => v.write_redis_args(out),
+            Integer::U32(v) => v.write_redis_args(out),
+            Integer::U64(v) => v.write_redis_args(out),
+            Integer::Isize(v) => v.write_redis_args(out),
+            Integer::I8(v) => v.write_redis_args(out),
+            Integer::I16(v) => v.write_redis_args(out),
+            Integer::I32(v) => v.write_redis_args(out),
+            Integer::I64(v) => v.write_redis_args(out),
+        }
+    }
+}
+
+impl From<usize> for Integer {
+    fn from(value: usize) -> Self {
+        Integer::Usize(value)
+    }
+}
+
+impl From<u8> for Integer {
+    fn from(value: u8) -> Self {
+        Integer::U8(value)
+    }
+}
+
+impl From<u16> for Integer {
+    fn from(value: u16) -> Self {
+        Integer::U16(value)
+    }
+}
+
+impl From<u32> for Integer {
+    fn from(value: u32) -> Self {
+        Integer::U32(value)
+    }
+}
+
+impl From<u64> for Integer {
+    fn from(value: u64) -> Self {
+        Integer::U64(value)
+    }
+}
+
+impl From<isize> for Integer {
+    fn from(value: isize) -> Self {
+        Integer::Isize(value)
+    }
+}
+
+impl From<i8> for Integer {
+    fn from(value: i8) -> Self {
+        Integer::I8(value)
+    }
+}
+
+impl From<i16> for Integer {
+    fn from(value: i16) -> Self {
+        Integer::I16(value)
+    }
+}
+
+impl From<i32> for Integer {
+    fn from(value: i32) -> Self {
+        Integer::I32(value)
+    }
+}
+
+impl From<i64> for Integer {
+    fn from(value: i64) -> Self {
+        Integer::I64(value)
+    }
+}
+
 /// Let's you build a ts range query with all options via a builder pattern:
 ///
 /// ```rust
@@ -118,10 +212,10 @@ impl ToRedisArgs for TsBucketTimestamp {
 ///
 #[derive(Default, Debug, Clone)]
 pub struct TsRangeQuery {
-    from: Option<u64>,
-    to: Option<u64>,
+    from: Option<Integer>,
+    to: Option<Integer>,
     latest: bool,
-    filter_by_ts: Vec<u64>,
+    filter_by_ts: Vec<Integer>,
     filter_by_value: Option<(f64, f64)>,
     count: Option<u64>,
     align: Option<TsAlign>,
@@ -133,15 +227,15 @@ pub struct TsRangeQuery {
 impl TsRangeQuery {
     /// Start timestamp of the series to query. Defaults to '-' (earliest sample)
     /// if left empty.
-    pub fn from(mut self, from: u64) -> Self {
-        self.from = Some(from);
+    pub fn from<T: Into<Integer>>(mut self, from: T) -> Self {
+        self.from = Some(Into::into(from));
         self
     }
 
     /// End timestamp of the series to query. Defaults to '+' (latest sample)
     /// if left empty.
-    pub fn to(mut self, to: u64) -> Self {
-        self.to = Some(to);
+    pub fn to<T: Into<Integer>>(mut self, to: T) -> Self {
+        self.to = Some(Into::into(to));
         self
     }
 
@@ -153,8 +247,8 @@ impl TsRangeQuery {
 
     /// Will enable the FILTER_BY_TS option with given timestamps. Will only
     /// be added if the given Vec contains any ts values.
-    pub fn filter_by_ts(mut self, ts: Vec<u64>) -> Self {
-        self.filter_by_ts = ts;
+    pub fn filter_by_ts<T: Into<Integer>>(mut self, ts: Vec<T>) -> Self {
+        self.filter_by_ts = ts.into_iter().map(|v| Into::into(v)).collect();
         self
     }
 
@@ -202,13 +296,13 @@ impl ToRedisArgs for TsRangeQuery {
     where
         W: ?Sized + RedisWrite,
     {
-        if let Some(from) = self.from {
+        if let Some(ref from) = self.from {
             from.write_redis_args(out);
         } else {
             out.write_arg(b"-");
         }
 
-        if let Some(to) = self.to {
+        if let Some(ref to) = self.to {
             to.write_redis_args(out);
         } else {
             out.write_arg(b"+");

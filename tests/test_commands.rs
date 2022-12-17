@@ -481,35 +481,44 @@ fn test_ts_range() {
         ])
         .unwrap();
 
-    let res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", TsRangeQuery::default())
-        .unwrap();
+    let query = TsRangeQuery::default();
+
+    let res: TsRange<u64, f64> = get_con().ts_range("test_ts_range", query.clone()).unwrap();
     assert_eq!(res.values, vec![(12, 1.0), (123, 2.0), (1234, 3.0)]);
 
+    let ts_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range("test_ts_range", query.clone().filter_by_ts(vec![123, 1234]))
+        .unwrap();
+    assert_eq!(ts_filtered_res.values, vec![(123, 2.0), (1234, 3.0)]);
+
+    let value_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range("test_ts_range", query.clone().filter_by_value(1.5, 2.5))
+        .unwrap();
+    assert_eq!(value_filtered_res.values, vec![(123, 2.0)]);
+
     let one_res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", TsRangeQuery::default().count(1))
+        .ts_range("test_ts_range", query.clone().count(1))
         .unwrap();
     assert_eq!(one_res.values, vec![(12, 1.0)]);
 
+    let range_query = query.clone().from(12).to(123);
+
     let range_res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range", TsRangeQuery::default().from(12).to(123))
+        .ts_range("test_ts_range", range_query.clone())
         .unwrap();
     assert_eq!(range_res.values, vec![(12, 1.0), (123, 2.0)]);
 
     let sum: TsRange<u64, f64> = get_con()
         .ts_range(
             "test_ts_range",
-            TsRangeQuery::default()
-                .from(12)
-                .to(123)
+            range_query
+                .clone()
                 .aggregation_type(TsAggregationType::Sum(10000)),
         )
         .unwrap();
     assert_eq!(sum.values, vec![(0, 3.0)]);
 
-    let res: TsRange<u64, f64> = get_con()
-        .ts_range("test_ts_range2", TsRangeQuery::default())
-        .unwrap();
+    let res: TsRange<u64, f64> = get_con().ts_range("test_ts_range2", query.clone()).unwrap();
     assert_eq!(res.values, vec![]);
 }
 
@@ -535,6 +544,22 @@ fn test_ts_revrange() {
         .ts_revrange("test_ts_revrange", TsRangeQuery::default())
         .unwrap();
     assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
+
+    let ts_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range(
+            "test_ts_range",
+            TsRangeQuery::default().filter_by_ts(vec![123, 1234]),
+        )
+        .unwrap();
+    assert_eq!(ts_filtered_res.values, vec![(123, 2.0), (1234, 3.0)]);
+
+    let value_filtered_res: TsRange<u64, f64> = get_con()
+        .ts_range(
+            "test_ts_range",
+            TsRangeQuery::default().filter_by_value(1.5, 2.5),
+        )
+        .unwrap();
+    assert_eq!(value_filtered_res.values, vec![(123, 2.0)]);
 
     let one_res: TsRange<u64, f64> = get_con()
         .ts_revrange("test_ts_revrange", TsRangeQuery::default().count(1))
