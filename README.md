@@ -50,13 +50,6 @@ With async feature inherited from the [redis](https://docs.rs/redis) crate (eith
  let _:() = con.ts_create("my_ts", TsOptions::default())?;
  ```
  
- ## Compatibillity note
- 
- Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
-Redis time series module the number of arguments for ts_range, ts_revrange, ts_mrange and ts_mrevrange have simply 
-grown to long. All existing and the new arguments are now replaced by a single `TsRangeQuery` struct for which there
-is also a builder available.
- 
  ## Asynchronous usage 
  
  To enable redis time series async commands you simply load the 
@@ -72,3 +65,10 @@ let mut con = client.get_async_connection().await?;
  
 let _:() = con.ts_create("my_ts", TsOptions::default()).await?;
 ```
+ 
+ ## Compatibillity note
+ 
+ Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
+Redis time series module the number of arguments for ts_range, ts_revrange, ts_mrange and ts_mrevrange have simply 
+grown to long. All existing and the new arguments are now replaced by a single `TsRangeQuery` struct for which there
+is also a builder available.
