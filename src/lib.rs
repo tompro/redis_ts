@@ -1,4 +1,4 @@
-//! redis_ts proivdes a small trait with extension functions for the
+//! redis_ts provides a small trait with extension functions for the
 //! [redis](https://docs.rs/redis) crate to allow
 //! working with redis time series data that can be installed as
 //! a [redis module](https://oss.redislabs.com/redistimeseries). Time
