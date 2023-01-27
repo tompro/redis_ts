@@ -483,7 +483,7 @@ impl ToRedisArgs for TsOptions {
     {
         if let Some(ref rt) = self.retention_time {
             out.write_arg(b"RETENTION");
-            out.write_arg(format!("{}", rt).as_bytes());
+            out.write_arg(format!("{rt}").as_bytes());
         }
 
         if self.uncompressed {
@@ -496,7 +496,7 @@ impl ToRedisArgs for TsOptions {
 
         if let Some(ref alloc) = self.chunk_size {
             out.write_arg(b"CHUNK_SIZE");
-            out.write_arg(format!("{}", alloc).as_bytes());
+            out.write_arg(format!("{alloc}").as_bytes());
         }
 
         if let Some(ref l) = self.labels {
@@ -547,8 +547,8 @@ impl TsFilterOptions {
         value: V,
     ) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{}", name),
-            value: format!("{}", value),
+            name: format!("{name}"),
+            value: format!("{value}"),
             compare: TsCompare::Eq,
         });
         self
@@ -561,8 +561,8 @@ impl TsFilterOptions {
         value: V,
     ) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{}", name),
-            value: format!("{}", value),
+            name: format!("{name}"),
+            value: format!("{value}"),
             compare: TsCompare::NotEq,
         });
         self
@@ -578,12 +578,12 @@ impl TsFilterOptions {
             "({})",
             values
                 .iter()
-                .map(|v| { format!("{}", v) })
+                .map(|v| { format!("{v}") })
                 .collect::<Vec<String>>()
                 .join(",")
         );
         self.filters.push(TsFilter {
-            name: format!("{}", name),
+            name: format!("{name}"),
             value: set,
             compare: TsCompare::Eq,
         });
@@ -600,12 +600,12 @@ impl TsFilterOptions {
             "({})",
             values
                 .iter()
-                .map(|v| { format!("{}", v) })
+                .map(|v| { format!("{v}") })
                 .collect::<Vec<String>>()
                 .join(",")
         );
         self.filters.push(TsFilter {
-            name: format!("{}", name),
+            name: format!("{name}"),
             value: set,
             compare: TsCompare::NotEq,
         });
@@ -615,7 +615,7 @@ impl TsFilterOptions {
     /// Select all time series that have the given label.
     pub fn has_label<L: Display + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{}", name),
+            name: format!("{name}"),
             value: "".to_string(),
             compare: TsCompare::NotEq,
         });
@@ -625,7 +625,7 @@ impl TsFilterOptions {
     /// Select all time series that do not have the given label.
     pub fn not_has_label<L: Display + ToRedisArgs>(mut self, name: L) -> Self {
         self.filters.push(TsFilter {
-            name: format!("{}", name),
+            name: format!("{name}"),
             value: "".to_string(),
             compare: TsCompare::Eq,
         });
