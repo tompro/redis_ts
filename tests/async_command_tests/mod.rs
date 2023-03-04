@@ -7,7 +7,7 @@ use redis::AsyncCommands;
 use redis_ts::AsyncTsCommands;
 use redis_ts::{
     TsAggregationType, TsDuplicatePolicy, TsFilterOptions, TsInfo, TsMget, TsMrange, TsOptions,
-    TsRange,
+    TsRange, TsRangeQuery
 };
 use std::env;
 use std::thread;
@@ -349,17 +349,19 @@ pub async fn ts_range(name: &str) {
         .await
         .unwrap();
 
+    let query = TsRangeQuery::default();
+
     let res: TsRange<u64, f64> = con
-        .ts_range(name, "-", "+", None::<usize>, None)
+        .ts_range(name, query.clone())
         .await
         .unwrap();
     assert_eq!(res.values, vec![(12, 1.0), (123, 2.0), (1234, 3.0)]);
 
-    let one_res: TsRange<u64, f64> = con.ts_range(name, "-", "+", Some(1), None).await.unwrap();
+    let one_res: TsRange<u64, f64> = con.ts_range(name, query.clone().count(1)).await.unwrap();
     assert_eq!(one_res.values, vec![(12, 1.0)]);
 
     let range_res: TsRange<u64, f64> = con
-        .ts_range(name, 12, 123, None::<usize>, None)
+        .ts_range(name, query.clone().filter_by_ts(vec![12, 123]))
         .await
         .unwrap();
     assert_eq!(range_res.values, vec![(12, 1.0), (123, 2.0)]);
@@ -367,17 +369,14 @@ pub async fn ts_range(name: &str) {
     let sum: TsRange<u64, f64> = con
         .ts_range(
             name,
-            12,
-            123,
-            None::<usize>,
-            Some(TsAggregationType::Sum(10000)),
+            query.clone().filter_by_ts(vec![12, 123]).aggregation_type(TsAggregationType::Sum(10000))
         )
         .await
         .unwrap();
     assert_eq!(sum.values, vec![(0, 3.0)]);
 
     let res: TsRange<u64, f64> = con
-        .ts_range(name2, "-", "+", None::<usize>, None)
+        .ts_range(name2, query.clone())
         .await
         .unwrap();
     assert_eq!(res.values, vec![]);
@@ -392,20 +391,23 @@ pub async fn ts_revrange(name: &str) {
         .await
         .unwrap();
 
+    let query = TsRangeQuery::default();
+
+
     let res: TsRange<u64, f64> = con
-        .ts_revrange(name, "-", "+", None::<usize>, None)
+        .ts_revrange(name, query.clone())
         .await
         .unwrap();
     assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
 
     let one_res: TsRange<u64, f64> = con
-        .ts_revrange(name, "-", "+", Some(1), None)
+        .ts_revrange(name, query.clone().count(1))
         .await
         .unwrap();
     assert_eq!(one_res.values, vec![(1234, 3.0)]);
 
     let range_res: TsRange<u64, f64> = con
-        .ts_revrange(name, 12, 123, None::<usize>, None)
+        .ts_revrange(name, query.clone().filter_by_ts(vec![12, 123]))
         .await
         .unwrap();
     assert_eq!(range_res.values, vec![(123, 2.0), (12, 1.0)]);
@@ -413,17 +415,14 @@ pub async fn ts_revrange(name: &str) {
     let sum: TsRange<u64, f64> = con
         .ts_revrange(
             name,
-            12,
-            123,
-            None::<usize>,
-            Some(TsAggregationType::Sum(10000)),
+            query.clone().filter_by_ts(vec![12, 123]).aggregation_type(TsAggregationType::Sum(10000))
         )
         .await
         .unwrap();
     assert_eq!(sum.values, vec![(0, 3.0)]);
 
     let res: TsRange<u64, f64> = con
-        .ts_revrange(name2, "-", "+", None::<usize>, None)
+        .ts_revrange(name2, query.clone())
         .await
         .unwrap();
     assert_eq!(res.values, vec![]);
@@ -451,12 +450,11 @@ pub async fn ts_mrange(name: &str) {
         .await
         .unwrap();
 
+    let query = TsRangeQuery::default();
+
     let res: TsMrange<u64, f64> = con
         .ts_mrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            query.clone(),
             TsFilterOptions::default()
                 .equals("l", label)
                 .with_labels(true),
@@ -477,10 +475,7 @@ pub async fn ts_mrange(name: &str) {
 
     let res2: TsMrange<u64, f64> = con
         .ts_mrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            query.clone(),
             TsFilterOptions::default()
                 .equals("none", "existing")
                 .with_labels(true),
@@ -512,12 +507,11 @@ pub async fn ts_mrevrange(name: &str) {
         .await
         .unwrap();
 
+    let query = TsRangeQuery::default();
+
     let res: TsMrange<u64, f64> = con
         .ts_mrevrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            query.clone(),
             TsFilterOptions::default()
                 .equals("l", label)
                 .with_labels(true),
@@ -538,10 +532,7 @@ pub async fn ts_mrevrange(name: &str) {
 
     let res2: TsMrange<u64, f64> = con
         .ts_mrevrange(
-            "-",
-            "+",
-            None::<usize>,
-            None,
+            query.clone(),
             TsFilterOptions::default()
                 .equals("none", "existing")
                 .with_labels(true),
