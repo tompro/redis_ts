@@ -1,6 +1,6 @@
 # redis_ts
 
-[![crates.io](https://img.shields.io/badge/crates.io-v0.5.0-orange)](https://crates.io/crates/redis_ts)
+[![crates.io](https://img.shields.io/badge/crates.io-v0.5.1-orange)](https://crates.io/crates/redis_ts)
 ![Continuous integration](https://github.com/tompro/redis_ts/workflows/Continuous%20integration/badge.svg)
 
 redis_ts provides a small trait with extension functions for the 
@@ -16,7 +16,7 @@ but should work with versions higher than that.
  ```ini
  [dependencies]
  redis = "0.22.1"
- redis_ts = "0.5.0"
+ redis_ts = "0.5.1"
  ```
 
  Or via git:
@@ -30,7 +30,7 @@ With async feature inherited from the [redis](https://docs.rs/redis) crate (eith
 ```ini
  [dependencies]
  redis = "0.22.1"
- redis_ts = { version = "0.5.0", features = ['tokio-comp'] }
+ redis_ts = { version = "0.5.1", features = ['tokio-comp'] }
 ``` 
  
  ## Synchronous usage
