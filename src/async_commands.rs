@@ -311,11 +311,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
     }
 
     /// Returns the latest (current) value from multiple redis time series.
-    fn ts_mget<
-        'a,
-        TS: Default + FromRedisValue + 'a,
-        V: Default + FromRedisValue + 'a,
-    >(
+    fn ts_mget<'a, TS: Default + FromRedisValue + 'a, V: Default + FromRedisValue + 'a>(
         &mut self,
         filter_options: TsFilterOptions,
     ) -> RedisFuture<TsMget<TS, V>> {
@@ -368,11 +364,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
     }
 
     #[doc(hidden)]
-    fn mrange<
-        'a,
-        TS: Default + FromRedisValue + Copy,
-        V: Default + FromRedisValue + Copy,
-    >(
+    fn mrange<'a, TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy>(
         &mut self,
         command: &str,
         query: TsRangeQuery,
@@ -385,11 +377,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
     }
 
     /// Executes multiple redis time series range queries.
-    fn ts_mrange<
-        'a,
-        TS: Default + FromRedisValue + Copy,
-        V: Default + FromRedisValue + Copy,
-    >(
+    fn ts_mrange<'a, TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy>(
         &mut self,
         query: TsRangeQuery,
         filter_options: TsFilterOptions,
@@ -398,11 +386,7 @@ pub trait AsyncTsCommands: ConnectionLike + Send + Sized {
     }
 
     /// Executes multiple redis time series revrange queries.
-    fn ts_mrevrange<
-        'a,
-        TS: Default + FromRedisValue + Copy,
-        V: Default + FromRedisValue + Copy,
-    >(
+    fn ts_mrevrange<'a, TS: Default + FromRedisValue + Copy, V: Default + FromRedisValue + Copy>(
         &mut self,
         query: TsRangeQuery,
         filter_options: TsFilterOptions,
