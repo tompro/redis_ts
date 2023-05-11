@@ -27,6 +27,7 @@ but should work with versions higher than that.
  ```
 
 With async feature inherited from the [redis](https://docs.rs/redis) crate (either: 'async-std-comp' or 'tokio-comp):
+
 ```ini
  [dependencies]
  redis = "0.23.0"
@@ -65,10 +66,10 @@ let mut con = client.get_async_connection().await?;
  
 let _:() = con.ts_create("my_ts", TsOptions::default()).await?;
 ```
- 
- ## Compatibillity note
- 
- Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
+
+## Compatibility note
+
+Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
 Redis time series module the number of arguments for ts_range, ts_revrange, ts_mrange and ts_mrevrange have simply 
 grown to long. All existing and the new arguments are now replaced by a single `TsRangeQuery` struct for which there
 is also a builder available.
