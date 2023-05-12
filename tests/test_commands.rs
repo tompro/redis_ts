@@ -546,16 +546,16 @@ fn test_ts_revrange() {
     assert_eq!(res.values, vec![(1234, 3.0), (123, 2.0), (12, 1.0)]);
 
     let ts_filtered_res: TsRange<u64, f64> = get_con()
-        .ts_range(
-            "test_ts_range",
+        .ts_revrange(
+            "test_ts_revrange",
             TsRangeQuery::default().filter_by_ts(vec![123, 1234]),
         )
         .unwrap();
-    assert_eq!(ts_filtered_res.values, vec![(123, 2.0), (1234, 3.0)]);
+    assert_eq!(ts_filtered_res.values, vec![(1234, 3.0), (123, 2.0)]);
 
     let value_filtered_res: TsRange<u64, f64> = get_con()
-        .ts_range(
-            "test_ts_range",
+        .ts_revrange(
+            "test_ts_revrange",
             TsRangeQuery::default().filter_by_value(1.5, 2.5),
         )
         .unwrap();
