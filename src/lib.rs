@@ -11,7 +11,7 @@
 //! ```ini
 //! [dependencies]
 //! redis = "0.23.0"
-//! redis_ts = "0.5.1"
+//! redis_ts = "0.5.2"
 //! ```
 //!
 //! Or via git:
@@ -26,7 +26,7 @@
 //! ```ini
 //! [dependencies]
 //! redis = "0.23.0"
-//! redis_ts = { version = "0.5.1", features = ['tokio-comp'] }
+//! redis_ts = { version = "0.5.2", features = ['tokio-comp'] }
 //! ```
 //!
 //! # Synchronous usage
