@@ -10,12 +10,12 @@ a [redis module](https://oss.redislabs.com/redistimeseries). Time
 series commands are available as synchronous and asynchronous versions.
  
 The crate is called `redis_ts` and you can depend on it via cargo. You will 
-also need redis in your dependencies. It has been tested against redis 0.22.1 
+also need redis in your dependencies. It has been tested against redis 0.23.0 
 but should work with versions higher than that.
 
  ```ini
  [dependencies]
- redis = "0.22.1"
+ redis = "0.23.0"
  redis_ts = "0.5.1"
  ```
 
@@ -27,9 +27,10 @@ but should work with versions higher than that.
  ```
 
 With async feature inherited from the [redis](https://docs.rs/redis) crate (either: 'async-std-comp' or 'tokio-comp):
+
 ```ini
  [dependencies]
- redis = "0.22.1"
+ redis = "0.23.0"
  redis_ts = { version = "0.5.1", features = ['tokio-comp'] }
 ``` 
  
@@ -65,10 +66,10 @@ let mut con = client.get_async_connection().await?;
  
 let _:() = con.ts_create("my_ts", TsOptions::default()).await?;
 ```
- 
- ## Compatibillity note
- 
- Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
+
+## Compatibility note
+
+Versions >= 0.5 contains a breaking change in the argument list of range queries. With some recent additions in the 
 Redis time series module the number of arguments for ts_range, ts_revrange, ts_mrange and ts_mrevrange have simply 
 grown to long. All existing and the new arguments are now replaced by a single `TsRangeQuery` struct for which there
 is also a builder available.
