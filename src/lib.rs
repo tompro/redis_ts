@@ -352,7 +352,7 @@ pub use crate::commands::TsCommands;
 
 pub use crate::types::{
     TsAggregationType, TsAlign, TsBucketTimestamp, TsDuplicatePolicy, TsFilterOptions, TsInfo,
-    TsMget, TsMrange, TsOptions, TsRange, TsRangeQuery,
+    TsMget, TsMrange, TsMrangeEntry, TsOptions, TsRange, TsRangeQuery,
 };
 
 #[cfg(any(feature = "tokio-comp", feature = "async-std-comp"))]
