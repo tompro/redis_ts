@@ -5,13 +5,13 @@
 //! series commands are available as synchronous and asynchronous versions.
 //!
 //! The crate is called `redis_ts` and you can depend on it via cargo. You will
-//! also need redis in your dependencies. It has been tested against redis 0.23.0
+//! also need redis in your dependencies. It has been tested against redis 0.24.0
 //! but should work with versions higher than that.
 //!
 //! ```ini
 //! [dependencies]
-//! redis = "0.23.0"
-//! redis_ts = "0.5.2"
+//! redis = "0.24.0"
+//! redis_ts = "0.5.3"
 //! ```
 //!
 //! Or via git:
@@ -25,8 +25,8 @@
 //! crate (either: 'async-std-comp' or 'tokio-comp):
 //! ```ini
 //! [dependencies]
-//! redis = "0.23.0"
-//! redis_ts = { version = "0.5.2", features = ['tokio-comp'] }
+//! redis = "0.24.0"
+//! redis_ts = { version = "0.5.3", features = ['tokio-comp'] }
 //! ```
 //!
 //! # Synchronous usage
